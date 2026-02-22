@@ -1,0 +1,5 @@
+{
+  "name": "SparTime Boxing Timer",
+  "description": "A professional-grade boxing interval timer with customizable rounds, work periods, and rest intervals.",
+  "requestFramePermissions": []
+}
