@@ -355,21 +355,26 @@ export default function App() {
 
   const handleTimerEnd = useCallback(() => {
     if (timerState === 'WARMUP') {
+      // Fight Start Sound (High)
       playSound(880, 0.5);
       setTimerState('FIGHT');
       setTimeLeft(config.fightTime);
     } else if (timerState === 'FIGHT') {
       if (currentRound < config.rounds) {
+        // Rest Start Sound (Lower)
         playSound(440, 0.5);
         setTimerState('REST');
         setTimeLeft(config.restTime);
       } else {
-        playSound(880, 1.0);
+        // Workout Finished Sound (Victory)
+        playSound(880, 0.3);
+        setTimeout(() => playSound(1046.5, 0.8), 300);
         setTimerState('FINISHED');
         setIsActive(false);
         setShowRating(true);
       }
     } else if (timerState === 'REST') {
+      // Round Start Sound (High)
       playSound(880, 0.5);
       setTimerState('FIGHT');
       setCurrentRound(prev => prev + 1);
@@ -404,6 +409,10 @@ export default function App() {
   };
 
   const startTraining = () => {
+    // Start Sound
+    playSound(660, 0.2);
+    setTimeout(() => playSound(880, 0.4), 200);
+    
     setTimerState('WARMUP');
     setTimeLeft(config.warmupTime);
     setCurrentRound(1);
@@ -497,7 +506,7 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex-1 flex flex-col pb-24"
+            className="flex-1 flex flex-col h-full"
           >
             {/* Header */}
             <header className="p-6 flex justify-between items-center z-10">
@@ -1344,7 +1353,7 @@ export default function App() {
             )}
 
             {/* Controls */}
-            <div className="w-full max-w-md grid grid-cols-2 gap-4 z-10 mb-6">
+            <div className="w-full max-w-md grid grid-cols-2 gap-4 z-10 mb-4">
               <button
                 onClick={toggleTimer}
                 className={`flex items-center justify-center gap-3 py-5 rounded-2xl font-bold transition-all active:scale-95 ${
@@ -1357,20 +1366,20 @@ export default function App() {
                 {isActive ? 'Pause' : 'Resume'}
               </button>
               <button
-                onClick={resetTimer}
-                className="flex items-center justify-center gap-3 py-5 rounded-2xl bg-orange-500/10 text-orange-500 border border-orange-500/20 font-bold transition-all active:scale-95 hover:bg-orange-500/20"
+                onClick={skipPhase}
+                className="flex items-center justify-center gap-3 py-5 rounded-2xl bg-white/5 text-white/70 border border-white/10 font-bold transition-all active:scale-95 hover:bg-white/10"
               >
-                <RotateCcw size={20} />
-                Reset
+                <FastForward size={20} />
+                Skip
               </button>
             </div>
 
             <button
-              onClick={skipPhase}
-              className="w-full max-w-md flex items-center justify-center gap-3 py-5 rounded-2xl bg-white/5 text-white/70 border border-white/10 font-bold transition-all active:scale-95 hover:bg-white/10"
+              onClick={resetTimer}
+              className="w-full max-w-md flex items-center justify-center gap-3 py-4 rounded-2xl bg-orange-500/10 text-orange-500 border border-orange-500/20 font-bold transition-all active:scale-95 hover:bg-orange-500/20"
             >
-              <FastForward size={20} />
-              Finish Phase
+              <RotateCcw size={18} />
+              Reset Session
             </button>
           </div>
         </motion.div>
