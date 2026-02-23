@@ -17,7 +17,8 @@
 
 @layer base {
   body {
-    @apply bg-bg text-white font-sans antialiased overflow-hidden transition-colors duration-300;
+    @apply bg-bg text-white font-sans antialiased transition-colors duration-300;
+    min-height: 100vh;
   }
 
   body.light-mode {
@@ -36,7 +37,11 @@
   }
 
   body.light-mode .bg-white\/5 {
-    background-color: rgba(0, 0, 0, 0.03);
+    background-color: rgba(0, 0, 0, 0.04);
+  }
+
+  body.light-mode .bg-white\/10 {
+    background-color: rgba(0, 0, 0, 0.08);
   }
 
   body.light-mode .border-white\/5,
@@ -45,10 +50,43 @@
   }
 
   body.light-mode .text-white\/40,
-  body.light-mode .text-white\/30,
+  body.light-mode .text-white\/30 {
+    @apply text-slate-400;
+  }
+
   body.light-mode .text-white\/60,
   body.light-mode .text-white\/50 {
     @apply text-slate-500;
+  }
+
+  body.light-mode .text-white {
+    @apply text-slate-900;
+  }
+
+  body.light-mode .bg-zinc-900,
+  body.light-mode .bg-zinc-900\/80 {
+    background-color: rgba(255, 255, 255, 0.9);
+    @apply backdrop-blur-xl;
+  }
+
+  body.light-mode .bg-zinc-900 {
+    background-color: #ffffff;
+  }
+
+  body.light-mode .text-zinc-900 {
+    @apply text-slate-900;
+  }
+
+  body.light-mode .shadow-white\/5 {
+    shadow-color: rgba(0, 0, 0, 0.1);
+  }
+
+  body.light-mode .from-fight-warn\/20 {
+    --tw-gradient-from: rgba(239, 68, 68, 0.1) var(--tw-gradient-from-position);
+  }
+
+  body.light-mode .to-warmup\/20 {
+    --tw-gradient-to: rgba(59, 130, 246, 0.1) var(--tw-gradient-to-position);
   }
 }
 

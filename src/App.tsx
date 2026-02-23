@@ -433,22 +433,22 @@ export default function App() {
                         </span>
                         <button 
                           onClick={() => setIsDarkMode(!isDarkMode)}
-                          className={`relative w-14 h-8 rounded-full p-1 transition-all duration-300 ${isDarkMode ? 'bg-indigo-900' : 'bg-sky-400'}`}
+                          className={`relative w-20 h-10 rounded-full p-1.5 transition-all duration-300 ${isDarkMode ? 'bg-indigo-900' : 'bg-sky-400'}`}
                         >
                           <motion.div 
-                            className="w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-md z-10 relative"
-                            animate={{ x: isDarkMode ? 24 : 0 }}
+                            className="w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-md z-10 relative"
+                            animate={{ x: isDarkMode ? 40 : 0 }}
                             transition={{ type: "spring", stiffness: 500, damping: 30 }}
                           >
                             {isDarkMode ? (
-                              <motion.div initial={{ rotate: -90 }} animate={{ rotate: 0 }}><Moon size={12} className="text-indigo-900 fill-indigo-900" /></motion.div>
+                              <motion.div initial={{ rotate: -90 }} animate={{ rotate: 0 }}><Moon size={16} className="text-indigo-900 fill-indigo-900" /></motion.div>
                             ) : (
-                              <motion.div initial={{ rotate: 90 }} animate={{ rotate: 0 }}><Sun size={12} className="text-sky-500 fill-sky-500" /></motion.div>
+                              <motion.div initial={{ rotate: 90 }} animate={{ rotate: 0 }}><Sun size={16} className="text-sky-500 fill-sky-500" /></motion.div>
                             )}
                           </motion.div>
-                          <div className="absolute inset-0 flex items-center justify-between px-2.5">
-                            <Moon size={12} className={`text-white transition-opacity duration-300 ${isDarkMode ? 'opacity-100' : 'opacity-0'}`} />
-                            <Sun size={12} className={`text-white transition-opacity duration-300 ${isDarkMode ? 'opacity-0' : 'opacity-100'}`} />
+                          <div className="absolute inset-0 flex items-center justify-between px-3.5">
+                            <Moon size={14} className={`text-white transition-opacity duration-300 ${isDarkMode ? 'opacity-100' : 'opacity-0'}`} />
+                            <Sun size={14} className={`text-white transition-opacity duration-300 ${isDarkMode ? 'opacity-0' : 'opacity-100'}`} />
                           </div>
                         </button>
                       </div>
@@ -481,8 +481,35 @@ export default function App() {
             initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
-            className="flex-1 flex flex-col p-6 pt-40"
+            className="flex-1 flex flex-col p-6 overflow-y-auto custom-scrollbar"
           >
+            {/* Top Space with Premium Card */}
+            <div className="min-h-[45vh] flex flex-col justify-end pb-8">
+              {!isPremium && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/20 rounded-3xl p-6 relative overflow-hidden"
+                >
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Star size={16} className="text-amber-500 fill-amber-500" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500">Pro Recommendation</span>
+                    </div>
+                    <h3 className="text-lg font-display font-black italic mb-1">Get Prebuilt Workouts</h3>
+                    <p className="text-sm opacity-60 mb-4">Upgrade to Pro to access expert-designed routines and save your own presets.</p>
+                    <button 
+                      onClick={() => setIsPremium(true)}
+                      className="text-xs font-bold underline underline-offset-4 hover:text-amber-500 transition-colors"
+                    >
+                      Learn more about Pro
+                    </button>
+                  </div>
+                  <Zap size={80} className="absolute -right-4 -bottom-4 text-amber-500/10 -rotate-12" />
+                </motion.div>
+              )}
+            </div>
+
             <header className="flex items-center gap-4 mb-10">
               <button 
                 onClick={() => setCurrentView('tabs')}
@@ -493,7 +520,7 @@ export default function App() {
               <h2 className="text-2xl font-display font-black italic tracking-tight">Session Setup</h2>
             </header>
 
-            <div className="flex-1 space-y-5 overflow-y-auto pr-2 custom-scrollbar pb-10">
+            <div className="space-y-5 pb-10">
               <ConfigStepper 
                 label="Rounds" 
                 value={config.rounds} 
