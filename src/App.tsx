@@ -221,7 +221,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-bg text-white">
+    <div className="flex flex-col h-screen overflow-hidden bg-bg text-white">
       {/* Background Atmosphere */}
       <div 
         className="fixed inset-0 pointer-events-none opacity-20 blur-[100px] transition-colors duration-1000"
@@ -269,7 +269,7 @@ export default function App() {
               </div>
             </header>
 
-            <main className="flex-1 p-6 overflow-y-auto">
+            <main className="flex-1 p-6 overflow-y-auto pb-32">
               <AnimatePresence mode="wait">
                 {activeTab === 'home' && (
                   <motion.div 
@@ -286,7 +286,7 @@ export default function App() {
                         <p className="text-white/60 mb-6 max-w-[200px]">Set your rounds and push your limits today.</p>
                         <button 
                           onClick={() => setCurrentView('setup')}
-                          className={`px-8 py-4 font-bold rounded-2xl flex items-center gap-2 active:scale-95 transition-all shadow-lg ${isDarkMode ? 'bg-white text-black' : 'bg-white text-slate-900 shadow-slate-200/50'}`}
+                          className={`px-8 py-4 font-bold rounded-2xl flex items-center gap-2 active:scale-95 transition-all shadow-lg ${isDarkMode ? 'bg-white text-black' : 'bg-black text-white shadow-slate-900/10'}`}
                         >
                           <Play size={18} fill="currentColor" />
                           Start Session
@@ -325,7 +325,7 @@ export default function App() {
                           </div>
                           <button 
                             onClick={() => setIsPremium(true)}
-                            className={`px-6 py-3 font-bold rounded-xl active:scale-95 transition-transform ${isDarkMode ? 'bg-yellow-500 text-black' : 'bg-amber-200 text-slate-900'}`}
+                            className={`px-6 py-3 font-bold rounded-xl active:scale-95 transition-transform ${isDarkMode ? 'bg-yellow-500 text-black' : 'bg-black text-white shadow-black/10'}`}
                           >
                             $1.99 / mo
                           </button>
@@ -348,11 +348,11 @@ export default function App() {
                               setConfig({ ...config, rounds: p.rounds, fightTime: parseInt(p.time) * 60 });
                               setCurrentView('setup');
                             }}
-                            className={`w-full flex items-center justify-between p-4 border rounded-2xl transition-all ${isDarkMode ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-slate-50 border-slate-100 hover:bg-slate-100'}`}
+                            className={`w-full flex items-center justify-between p-4 border rounded-2xl transition-all ${isDarkMode ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-white border-slate-200 hover:border-slate-400 shadow-sm'}`}
                           >
                             <div className="flex items-center gap-4">
-                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDarkMode ? 'bg-white/5' : 'bg-white shadow-sm'}`}>
-                                <RotateCcw size={18} className={isDarkMode ? 'text-white/40' : 'text-slate-400'} />
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDarkMode ? 'bg-white/5' : 'bg-slate-100'}`}>
+                                <RotateCcw size={18} className={isDarkMode ? 'text-white/40' : 'text-slate-600'} />
                               </div>
                               <div className="text-left">
                                 <div className="font-bold">{p.name}</div>
@@ -377,21 +377,22 @@ export default function App() {
                     <h2 className="text-3xl font-display font-extrabold italic mb-6">Workouts</h2>
                     <div className="grid gap-4">
                       {[
-                        { name: 'Heavy Bag Blast', rounds: 12, time: '3:00', icon: <Dumbbell className="text-fight-warn" /> },
-                        { name: 'Speed Bag Drill', rounds: 6, time: '2:00', icon: <Clock className="text-warmup" /> },
-                        { name: 'Shadow Boxing', rounds: 3, time: '3:00', icon: <User className="text-rest" /> },
+                        { name: 'Heavy Bag Blast', rounds: 12, time: '3:00', icon: <Dumbbell className="text-fight-warn" />, color: 'from-red-500/10 to-transparent' },
+                        { name: 'Speed Bag Drill', rounds: 6, time: '2:00', icon: <Clock className="text-warmup" />, color: 'from-indigo-500/10 to-transparent' },
+                        { name: 'Shadow Boxing', rounds: 3, time: '3:00', icon: <User className="text-rest" />, color: 'from-amber-500/10 to-transparent' },
                       ].map((w, i) => (
-                        <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center justify-between hover:bg-white/10 transition-colors cursor-pointer group">
-                          <div className="flex items-center gap-4">
+                        <div key={i} className={`relative overflow-hidden bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center justify-between hover:bg-white/10 transition-all cursor-pointer group active:scale-[0.98]`}>
+                          <div className={`absolute inset-0 bg-gradient-to-r ${w.color} opacity-0 group-hover:opacity-100 transition-opacity`} />
+                          <div className="flex items-center gap-4 relative z-10">
                             <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                               {w.icon}
                             </div>
                             <div>
                               <h3 className="font-bold text-lg">{w.name}</h3>
-                              <p className="text-white/40 text-sm">{w.rounds} Rounds • {w.time} min</p>
+                              <p className="text-white/40 text-sm font-medium">{w.rounds} Rounds • {w.time} min</p>
                             </div>
                           </div>
-                          <ChevronUp className="rotate-90 opacity-20" />
+                          <ChevronLeft className="rotate-180 opacity-20 group-hover:opacity-50 transition-opacity relative z-10" />
                         </div>
                       ))}
                     </div>
@@ -469,12 +470,6 @@ export default function App() {
                 )}
               </AnimatePresence>
             </main>
-
-      <nav className="fixed bottom-0 left-0 right-0 bg-zinc-900/80 backdrop-blur-xl border-t border-white/5 px-6 py-4 flex justify-around items-center z-50">
-        <NavButton active={activeTab === 'home'} onClick={() => setActiveTab('home')} icon={<Home size={24} />} label="Home" isDarkMode={isDarkMode} />
-        <NavButton active={activeTab === 'workouts'} onClick={() => setActiveTab('workouts')} icon={<Dumbbell size={24} />} label="Workouts" isDarkMode={isDarkMode} />
-        <NavButton active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<User size={24} />} label="Profile" isDarkMode={isDarkMode} />
-      </nav>
           </motion.div>
         )}
 
@@ -484,76 +479,79 @@ export default function App() {
             initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
-            className="flex-1 flex flex-col p-6 overflow-y-auto custom-scrollbar"
+            className="flex-1 flex flex-col h-full overflow-hidden"
           >
-            <header className="flex items-center gap-4 mb-8">
+            <header className="p-6 flex items-center gap-4 z-10">
               <button 
                 onClick={() => setCurrentView('tabs')}
-                className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors"
+                className={`p-3 rounded-2xl transition-colors ${isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-white border border-slate-200 shadow-sm hover:bg-slate-50'}`}
               >
                 <ChevronLeft size={20} />
               </button>
               <h2 className="text-2xl font-display font-black italic tracking-tight">Session Setup</h2>
             </header>
 
-            {/* Top Space with Premium Card */}
-            <div className="min-h-[35vh] flex flex-col justify-end pb-8">
-              {!isPremium && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/20 rounded-3xl p-6 relative overflow-hidden group"
-                >
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Star size={16} className="text-amber-500 fill-amber-500" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500">Pro Recommendation</span>
+            <div className="flex-1 overflow-y-auto p-6 pb-32 custom-scrollbar">
+              {/* Top Space with Premium Card */}
+              <div className="min-h-[35vh] flex flex-col justify-end pb-8">
+                {!isPremium && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`border rounded-3xl p-6 relative overflow-hidden group ${isDarkMode ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-amber-500/20' : 'bg-white border-slate-200 shadow-sm'}`}
+                  >
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Star size={16} className="text-amber-500 fill-amber-500" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500">Pro Recommendation</span>
+                      </div>
+                      <h3 className="text-lg font-display font-black italic mb-1">Get Prebuilt Workouts</h3>
+                      <p className={`text-sm mb-5 ${isDarkMode ? 'opacity-60' : 'text-slate-500'}`}>Upgrade to Pro to access expert-designed routines and save your own presets.</p>
+                      <button 
+                        onClick={() => setIsPremium(true)}
+                        className={`w-full py-3 font-bold rounded-xl active:scale-95 transition-all shadow-lg ${isDarkMode ? 'bg-amber-500 text-black shadow-amber-500/20' : 'bg-black text-white shadow-black/10'}`}
+                      >
+                        Get full access NOW
+                      </button>
                     </div>
-                    <h3 className="text-lg font-display font-black italic mb-1">Get Prebuilt Workouts</h3>
-                    <p className="text-sm opacity-60 mb-5">Upgrade to Pro to access expert-designed routines and save your own presets.</p>
-                    <button 
-                      onClick={() => setIsPremium(true)}
-                      className="w-full py-3 bg-amber-500 text-black font-bold rounded-xl active:scale-95 transition-all hover:bg-amber-400 shadow-lg shadow-amber-500/20"
-                    >
-                      Get full access NOW
-                    </button>
-                  </div>
-                  <Zap size={80} className="absolute -right-4 -bottom-4 text-amber-500/10 -rotate-12 group-hover:scale-110 transition-transform" />
-                </motion.div>
-              )}
-            </div>
+                    <Zap size={80} className={`absolute -right-4 -bottom-4 -rotate-12 group-hover:scale-110 transition-transform ${isDarkMode ? 'text-amber-500/10' : 'text-slate-100'}`} />
+                  </motion.div>
+                )}
+              </div>
 
-            <div className="space-y-5 pb-10">
-              {[
-                { label: "Rounds", value: config.rounds, onChange: (v: number) => setConfig(prev => ({ ...prev, rounds: Math.max(1, v) })) },
-                { label: "Fight Time", value: config.fightTime, isTime: true, step: 30, onChange: (v: number) => setConfig(prev => ({ ...prev, fightTime: Math.max(10, v) })) },
-                { label: "Rest Time", value: config.restTime, isTime: true, step: 10, onChange: (v: number) => setConfig(prev => ({ ...prev, restTime: Math.max(5, v) })) },
-                { label: "Warmup", value: config.warmupTime, isTime: true, step: 5, onChange: (v: number) => setConfig(prev => ({ ...prev, warmupTime: Math.max(5, v) })) },
-              ].map((item, idx) => (
-                <motion.div
-                  key={item.label}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                >
-                  <ConfigStepper 
-                    label={item.label} 
-                    value={item.value} 
-                    isTime={item.isTime}
-                    onChange={item.onChange}
-                    step={item.step}
-                  />
-                </motion.div>
-              ))}
-            </div>
+              <div className="space-y-5 pb-10">
+                {[
+                  { label: "Rounds", value: config.rounds, onChange: (v: number) => setConfig(prev => ({ ...prev, rounds: Math.max(1, v) })) },
+                  { label: "Fight Time", value: config.fightTime, isTime: true, step: 30, onChange: (v: number) => setConfig(prev => ({ ...prev, fightTime: Math.max(10, v) })) },
+                  { label: "Rest Time", value: config.restTime, isTime: true, step: 10, onChange: (v: number) => setConfig(prev => ({ ...prev, restTime: Math.max(5, v) })) },
+                  { label: "Warmup", value: config.warmupTime, isTime: true, step: 5, onChange: (v: number) => setConfig(prev => ({ ...prev, warmupTime: Math.max(5, v) })) },
+                ].map((item, idx) => (
+                  <motion.div
+                    key={item.label}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                  >
+                    <ConfigStepper 
+                      label={item.label} 
+                      value={item.value} 
+                      isTime={item.isTime}
+                      onChange={item.onChange}
+                      step={item.step}
+                      isDarkMode={isDarkMode}
+                    />
+                  </motion.div>
+                ))}
+              </div>
 
-            <button
-              onClick={startTraining}
-              className="w-full py-5 bg-white text-black font-bold rounded-2xl shadow-xl shadow-white/5 active:scale-95 transition-transform flex items-center justify-center gap-3"
-            >
-              <Play size={20} fill="currentColor" />
-              Start Training
-            </button>
+              <button
+                onClick={startTraining}
+                className={`w-full py-5 font-bold rounded-2xl shadow-xl active:scale-95 transition-transform flex items-center justify-center gap-3 ${isDarkMode ? 'bg-white text-black shadow-white/5' : 'bg-black text-white shadow-black/10'}`}
+              >
+                <Play size={20} fill="currentColor" />
+                Start Training
+              </button>
+            </div>
           </motion.div>
         )}
 
@@ -563,16 +561,16 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex-1 flex flex-col items-center justify-center p-6 pt-2"
+            className="flex-1 flex flex-col h-full overflow-hidden"
           >
             {/* Header */}
-            <div className="w-full max-w-md flex justify-between items-center mb-4 z-10">
+            <div className="w-full flex justify-between items-center p-6 z-10">
               <button 
                 onClick={() => {
                   setIsActive(false);
                   setCurrentView('setup');
                 }}
-                className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors"
+                className={`p-3 rounded-2xl transition-colors ${isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-white border border-slate-200 shadow-sm hover:bg-slate-50'}`}
               >
                 <ChevronLeft size={24} />
               </button>
@@ -582,14 +580,15 @@ export default function App() {
               </div>
               <button 
                 onClick={() => setIsMuted(!isMuted)}
-                className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors"
+                className={`p-3 rounded-2xl transition-colors ${isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-white border border-slate-200 shadow-sm hover:bg-slate-50'}`}
               >
                 {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
               </button>
             </div>
 
-            {/* Timer Display */}
-            <div className="relative flex items-center justify-center z-10 mb-12">
+            <div className="flex-1 flex flex-col items-center justify-center p-6 pt-2 overflow-y-auto custom-scrollbar">
+              {/* Timer Display */}
+              <div className="relative flex items-center justify-center z-10 mb-12">
               <svg className="w-80 h-80 -rotate-90">
                 <circle
                   cx="160"
@@ -684,7 +683,8 @@ export default function App() {
               <FastForward size={20} />
               Finish Phase
             </button>
-          </motion.div>
+          </div>
+        </motion.div>
         )}
       </AnimatePresence>
 
@@ -738,6 +738,28 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Bottom Navigation */}
+      <AnimatePresence>
+        {!isActive && (
+          <div className="fixed bottom-8 left-0 right-0 flex justify-center z-50 px-6 pointer-events-none">
+            <motion.nav 
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              className={`pointer-events-auto flex items-center gap-2 p-2 rounded-full border shadow-2xl transition-all duration-300 ${
+                isDarkMode 
+                  ? 'bg-black/80 backdrop-blur-2xl border-white/10 shadow-black/50' 
+                  : 'bg-white/90 backdrop-blur-2xl border-slate-200 shadow-slate-900/5'
+              }`}
+            >
+              <NavButton active={activeTab === 'home'} onClick={() => setActiveTab('home')} icon={<Home size={20} />} label="Home" isDarkMode={isDarkMode} />
+              <NavButton active={activeTab === 'workouts'} onClick={() => setActiveTab('workouts')} icon={<Dumbbell size={20} />} label="Workouts" isDarkMode={isDarkMode} />
+              <NavButton active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<User size={20} />} label="Profile" isDarkMode={isDarkMode} />
+            </motion.nav>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -746,18 +768,52 @@ function NavButton({ active, onClick, icon, label, isDarkMode }: { active: boole
   return (
     <button 
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 transition-all ${active ? (isDarkMode ? 'text-fight-warn' : 'text-red-500') + ' scale-110' : 'text-white/30 hover:text-white/50'}`}
+      className={`relative flex items-center gap-2 px-4 py-2.5 rounded-full transition-all duration-500 overflow-hidden ${
+        active 
+          ? (isDarkMode ? 'bg-warmup text-white' : 'bg-black text-white') 
+          : (isDarkMode ? 'text-white/40 hover:bg-white/5' : 'text-slate-400 hover:bg-slate-100')
+      }`}
     >
-      {icon}
-      <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
+      <motion.div
+        layout
+        className="flex items-center gap-2"
+      >
+        <div className={`transition-transform duration-300 ${active ? 'scale-110' : 'scale-100'}`}>
+          {icon}
+        </div>
+        <AnimatePresence mode="wait">
+          {active && (
+            <motion.span 
+              initial={{ width: 0, opacity: 0, x: -10 }}
+              animate={{ width: 'auto', opacity: 1, x: 0 }}
+              exit={{ width: 0, opacity: 0, x: -10 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="text-xs font-bold uppercase tracking-widest whitespace-nowrap"
+            >
+              {label}
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </motion.div>
+      
+      {active && (
+        <motion.div 
+          layoutId="nav-glow"
+          className="absolute inset-0 bg-white/10 pointer-events-none"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        />
+      )}
     </button>
   );
 }
 
-function ConfigStepper({ label, value, onChange, isTime = false, step = 1 }: { 
+function ConfigStepper({ label, value, onChange, isDarkMode, isTime = false, step = 1 }: { 
   label: string; 
   value: number; 
   onChange: (v: number) => void;
+  isDarkMode: boolean;
   isTime?: boolean;
   step?: number;
 }) {
@@ -770,17 +826,23 @@ function ConfigStepper({ label, value, onChange, isTime = false, step = 1 }: {
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-white/40 text-[9px] font-bold uppercase tracking-widest px-2">{label}</span>
-      <div className="flex items-center justify-between bg-white/5 rounded-[20px] p-1 border border-white/5">
+      <span className={`text-[9px] font-bold uppercase tracking-widest px-2 ${isDarkMode ? 'text-white/40' : 'text-slate-500'}`}>{label}</span>
+      <div className={`flex items-center justify-between rounded-[20px] p-1 border transition-colors ${
+        isDarkMode 
+          ? 'bg-white/5 border-white/5' 
+          : 'bg-white border-slate-200 shadow-sm'
+      }`}>
         <button 
           onClick={() => onChange(value - step)}
-          className="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-full transition-colors active:scale-90"
+          className={`w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-90 ${
+            isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-slate-50 hover:bg-slate-100 text-slate-600'
+          }`}
         >
           <Minus size={18} />
         </button>
         
         <div className="flex flex-col items-center">
-          <span className="text-xl font-display font-black tracking-tighter">
+          <span className={`text-xl font-display font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
             {formatValue(value)}
           </span>
           {isTime && <span className="text-[7px] opacity-30 uppercase font-bold tracking-widest">Minutes</span>}
@@ -788,7 +850,9 @@ function ConfigStepper({ label, value, onChange, isTime = false, step = 1 }: {
 
         <button 
           onClick={() => onChange(value + step)}
-          className="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-full transition-colors active:scale-90"
+          className={`w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-90 ${
+            isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-slate-50 hover:bg-slate-100 text-slate-600'
+          }`}
         >
           <Plus size={18} />
         </button>

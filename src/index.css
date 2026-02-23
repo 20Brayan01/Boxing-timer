@@ -6,13 +6,13 @@
   --font-display: "Outfit", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  --color-fight: #22c55e;
-  --color-fight-warn: #ef4444;
-  --color-rest: #eab308;
-  --color-warmup: #3b82f6;
-  --color-bg: #151619;
-  --color-surface: rgba(255, 255, 255, 0.05);
-  --color-border: rgba(255, 255, 255, 0.1);
+  --color-fight: #00FF66; /* Neon Electric Lime */
+  --color-fight-warn: #FF3B30; /* Punchy Red */
+  --color-rest: #FFCC00; /* Alert Amber */
+  --color-warmup: #5856D6; /* Deep Indigo */
+  --color-bg: #0A0A0B; /* Deep Charcoal */
+  --color-surface: rgba(255, 255, 255, 0.03);
+  --color-border: rgba(255, 255, 255, 0.08);
 }
 
 @layer base {
@@ -22,14 +22,15 @@
   }
 
   body.light-mode {
-    --color-bg: #f9fafb;
+    --color-bg: #F5F2ED;
     --color-surface: #ffffff;
     --color-border: rgba(0, 0, 0, 0.08);
-    --color-warmup: #2563eb;
-    --color-fight: #16a34a;
-    --color-fight-warn: #dc2626;
-    --color-rest: #ca8a04;
-    @apply text-black;
+    --color-warmup: #5856D6;
+    --color-fight: #00C853;
+    --color-fight-warn: #D32F2F;
+    --color-rest: #FBC02D;
+    @apply text-slate-900;
+    background-image: none;
   }
 
   body.light-mode .bg-bg {
@@ -38,7 +39,7 @@
 
   body.light-mode .bg-white\/5 {
     background-color: #ffffff;
-    @apply border border-slate-200 shadow-sm;
+    @apply border border-slate-200 shadow-sm hover:shadow-md transition-shadow;
   }
 
   body.light-mode .bg-white\/10 {
@@ -48,32 +49,38 @@
 
   body.light-mode .border-white\/5,
   body.light-mode .border-white\/10 {
-    border-color: rgba(0, 0, 0, 0.1);
+    border-color: rgba(0, 0, 0, 0.08);
   }
 
   body.light-mode .text-white\/40,
-  body.light-mode .text-white\/30 {
-    @apply text-slate-600 font-medium;
+  body.light-mode .text-white\/30,
+  body.light-mode .text-white\/20,
+  body.light-mode .text-white\/10 {
+    @apply !text-slate-500 font-medium;
   }
 
   body.light-mode .text-white\/60,
   body.light-mode .text-white\/50 {
-    @apply text-slate-700 font-semibold;
+    @apply !text-slate-600 font-semibold;
   }
 
-  body.light-mode .text-white {
-    @apply text-black font-bold;
+  body.light-mode .text-white,
+  body.light-mode .text-white\/90,
+  body.light-mode .text-white\/80,
+  body.light-mode .text-white\/70,
+  body.light-mode .lucide {
+    @apply !text-slate-900;
   }
 
   body.light-mode .bg-zinc-900,
   body.light-mode .bg-zinc-900\/80 {
-    background-color: rgba(255, 255, 255, 0.98);
+    background-color: #FFFFFF;
     @apply backdrop-blur-xl border-t border-slate-200;
   }
 
   body.light-mode .bg-zinc-900 {
     background-color: #ffffff;
-    @apply border border-slate-200 shadow-sm;
+    @apply border border-slate-300 shadow-sm;
   }
 
   body.light-mode .text-zinc-900 {
@@ -81,19 +88,19 @@
   }
 
   body.light-mode .shadow-white\/5 {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
 
   body.light-mode .from-fight-warn\/20 {
-    --tw-gradient-from: #fff7ed var(--tw-gradient-from-position);
+    --tw-gradient-from: #fee2e2 var(--tw-gradient-from-position);
   }
 
   body.light-mode .to-warmup\/20 {
-    --tw-gradient-to: #eff6ff var(--tw-gradient-to-position);
+    --tw-gradient-to: #dbeafe var(--tw-gradient-to-position);
   }
 
   body.light-mode .bg-gradient-to-br {
-    @apply border-slate-100 shadow-sm;
+    @apply border-slate-300 shadow-md;
   }
 }
 
