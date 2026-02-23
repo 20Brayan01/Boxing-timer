@@ -736,60 +736,111 @@ export default function App() {
             <div className="flex-1 flex flex-col items-center justify-center p-6 pt-2 overflow-y-auto custom-scrollbar">
               {/* Timer Display */}
               <div className="relative flex items-center justify-center z-10 mb-12">
-              <svg className="w-80 h-80 -rotate-90">
-                <circle
-                  cx="160"
-                  cy="160"
-                  r={radius}
-                  fill="transparent"
-                  stroke="rgba(255,255,255,0.05)"
-                  strokeWidth="8"
-                  strokeDasharray="4 8"
-                />
-                <motion.circle
-                  cx="160"
-                  cy="160"
-                  r={radius}
-                  fill="transparent"
-                  stroke={getThemeColor()}
-                  strokeWidth={timerState === 'FIGHT' && timeLeft <= 10 ? "16" : "12"}
-                  strokeLinecap="round"
-                  strokeDasharray={circumference}
+                {/* Outer Ticks */}
+                <div className="absolute w-80 h-80 flex items-center justify-center pointer-events-none">
+                  {Array.from({ length: 72 }).map((_, i) => (
+                    <div 
+                      key={i} 
+                      className={`tick ${i % 6 === 0 ? 'active h-4 w-0.5' : 'h-2 w-px'}`}
+                      style={{ 
+                        transform: `rotate(${i * 5}deg) translateY(-145px)`,
+                        color: getThemeColor(),
+                        opacity: (i * 5) < (getProgress() / 100) * 360 ? 0.6 : 0.1
+                      }} 
+                    />
+                  ))}
+                </div>
+
+                {/* Main Dial Surface */}
+                <motion.div 
+                  className={`w-64 h-64 rounded-full flex items-center justify-center relative z-10 dial-surface ${!isDarkMode ? 'light' : ''}`}
                   animate={{ 
-                    strokeDashoffset: offset,
-                    rotate: -totalSecondsElapsed * 6 // 6 degrees per second
+                    scale: isActive ? 1.02 : 1,
+                  }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                >
+                  <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
+                    <motion.circle
+                      cx="128"
+                      cy="128"
+                      r="120"
+                      fill="transparent"
+                      stroke={getThemeColor()}
+                      strokeWidth="6"
+                      strokeLinecap="round"
+                      strokeDasharray={2 * Math.PI * 120}
+                      animate={{ 
+                        strokeDashoffset: (2 * Math.PI * 120) - (getProgress() / 100) * (2 * Math.PI * 120),
+                      }}
+                      transition={{ 
+                        duration: 1, 
+                        ease: "linear",
+                      }}
+                      style={{ 
+                        filter: `drop-shadow(0 0 8px ${getThemeColor()})`,
+                        opacity: timerState === 'IDLE' ? 0.1 : 1
+                      }}
+                    />
+                  </svg>
+
+                  {/* Inner Content */}
+                  <div className="flex flex-col items-center justify-center text-center z-20">
+                    <AnimatePresence mode="wait">
+                      <motion.span
+                        key={timerState + (timerState === 'FIGHT' && timeLeft <= 10 ? '-warn' : '')}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="font-display text-sm font-black uppercase tracking-[0.2em] mb-1"
+                        style={{ color: getThemeColor() }}
+                      >
+                        {timerState === 'FIGHT' && timeLeft <= 10 ? 'Finish Strong!' : (timerState === 'IDLE' ? 'Ready' : timerState)}
+                      </motion.span>
+                    </AnimatePresence>
+                    
+                    <span className={`font-mono text-6xl font-black tracking-tighter tabular-nums ${!isDarkMode ? 'text-slate-900' : 'text-white'}`}>
+                      {formatTime(timeLeft)}
+                    </span>
+
+                    {/* Central Knob Detail */}
+                    <div className={`absolute w-12 h-12 rounded-full opacity-10 border-2 ${!isDarkMode ? 'border-black' : 'border-white'}`} />
+
+                    {/* Glowing Indicator Dot */}
+                    <motion.div 
+                      className="absolute w-4 h-4 rounded-full z-30 flex items-center justify-center"
+                      style={{ 
+                        backgroundColor: getThemeColor(),
+                        boxShadow: `0 0 20px ${getThemeColor()}, 0 0 40px ${getThemeColor()}44`,
+                        top: '50%',
+                        left: '50%',
+                        marginTop: '-8px',
+                        marginLeft: '-8px',
+                      }}
+                      animate={{ 
+                        rotate: (getProgress() / 100) * 360 - 90,
+                        translateX: 120
+                      }}
+                      transition={{ duration: 1, ease: "linear" }}
+                    >
+                      <div className="w-1.5 h-1.5 bg-white rounded-full opacity-80" />
+                    </motion.div>
+                  </div>
+                </motion.div>
+
+                {/* Outer Glow */}
+                <motion.div 
+                  className="absolute w-72 h-72 rounded-full blur-3xl opacity-20 pointer-events-none"
+                  animate={{ 
+                    backgroundColor: getThemeColor(),
+                    scale: isActive ? [1, 1.1, 1] : 1
                   }}
                   transition={{ 
-                    duration: 1, 
-                    ease: "linear",
-                    strokeDashoffset: { 
-                      duration: timeLeft === (timerState === 'WARMUP' ? config.warmupTime : timerState === 'FIGHT' ? config.fightTime : config.restTime) ? 0 : 1 
-                    }
+                    duration: 2, 
+                    repeat: Infinity, 
+                    ease: "easeInOut" 
                   }}
-                  className="timer-ring"
-                  style={{ transformOrigin: 'center' }}
                 />
-              </svg>
-
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                <AnimatePresence mode="wait">
-                  <motion.span
-                    key={timerState + (timerState === 'FIGHT' && timeLeft <= 10 ? '-warn' : '')}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="font-display text-xl font-bold uppercase tracking-widest mb-1"
-                    style={{ color: getThemeColor() }}
-                  >
-                    {timerState === 'FIGHT' && timeLeft <= 10 ? 'Finish Strong!' : (timerState === 'IDLE' ? 'Ready' : timerState)}
-                  </motion.span>
-                </AnimatePresence>
-                
-                <span className="font-mono text-7xl font-bold tracking-tighter tabular-nums">
-                  {formatTime(timeLeft)}
-                </span>
               </div>
-            </div>
 
             {/* Round Counter */}
             <div className="z-10 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl px-8 py-4 mb-12 flex flex-col items-center">
