@@ -9,7 +9,7 @@ import {
   Play, Pause, RotateCcw, Settings, Volume2, VolumeX, 
   ChevronUp, ChevronDown, X, Home, Dumbbell, User, 
   FastForward, Info, Award, History, Clock, Star, Plus, Minus,
-  ChevronLeft, Zap, Coffee, ShieldCheck, TrendingUp
+  ChevronLeft, Zap, Coffee, ShieldCheck, TrendingUp, Moon, Sun
 } from 'lucide-react';
 
 type TimerState = 'IDLE' | 'WARMUP' | 'FIGHT' | 'REST' | 'FINISHED';
@@ -50,13 +50,24 @@ export default function App() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
 
+  const [isDarkMode, setIsDarkMode] = useState(true);
+
   // Auto-hide splash screen
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
-    }, 3000);
+    }, 2000);
     return () => clearTimeout(timer);
   }, []);
+
+  // Dark mode effect
+  useEffect(() => {
+    if (isDarkMode) {
+      document.body.classList.remove('light-mode');
+    } else {
+      document.body.classList.add('light-mode');
+    }
+  }, [isDarkMode]);
 
   // Sound generator
   const playSound = useCallback((frequency: number, duration: number) => {
@@ -125,6 +136,10 @@ export default function App() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [isActive, timeLeft, handleTimerEnd, timerState, playSound]);
+
+  const toggleTimer = () => {
+    setIsActive(!isActive);
+  };
 
   const startTraining = () => {
     setTimerState('WARMUP');
@@ -211,7 +226,7 @@ export default function App() {
         }}
       />
 
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         {currentView === 'tabs' && (
           <motion.div 
             key="tabs"
@@ -227,8 +242,19 @@ export default function App() {
                 <h1 className="font-display text-xl font-extrabold italic tracking-tight">SparTime</h1>
               </div>
               <div className="flex items-center gap-3">
-                <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${isPremium ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 'bg-white/5 text-white/40 border-white/10'}`}>
-                  {isPremium ? 'Premium' : 'Free'}
+                <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1.5 shadow-sm transition-all ${
+                  isPremium 
+                    ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 ring-1 ring-amber-500/10' 
+                    : 'bg-white/5 text-white/40 border-white/10'
+                }`}>
+                  {isPremium ? (
+                    <>
+                      <ShieldCheck size={10} />
+                      PRO
+                    </>
+                  ) : (
+                    'Free'
+                  )}
                 </div>
                 <button 
                   onClick={() => setIsMuted(!isMuted)}
@@ -401,6 +427,31 @@ export default function App() {
                     </div>
 
                     <div className="space-y-2">
+                      <div className="w-full flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                        <span className="flex items-center gap-3 font-medium text-sm opacity-80">
+                          <Zap size={18} className="text-warmup" /> Appearance
+                        </span>
+                        <button 
+                          onClick={() => setIsDarkMode(!isDarkMode)}
+                          className={`relative w-14 h-8 rounded-full p-1 transition-all duration-300 ${isDarkMode ? 'bg-indigo-900' : 'bg-sky-400'}`}
+                        >
+                          <motion.div 
+                            className="w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-md z-10 relative"
+                            animate={{ x: isDarkMode ? 24 : 0 }}
+                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                          >
+                            {isDarkMode ? (
+                              <motion.div initial={{ rotate: -90 }} animate={{ rotate: 0 }}><Moon size={12} className="text-indigo-900 fill-indigo-900" /></motion.div>
+                            ) : (
+                              <motion.div initial={{ rotate: 90 }} animate={{ rotate: 0 }}><Sun size={12} className="text-sky-500 fill-sky-500" /></motion.div>
+                            )}
+                          </motion.div>
+                          <div className="absolute inset-0 flex items-center justify-between px-2.5">
+                            <Moon size={12} className={`text-white transition-opacity duration-300 ${isDarkMode ? 'opacity-100' : 'opacity-0'}`} />
+                            <Sun size={12} className={`text-white transition-opacity duration-300 ${isDarkMode ? 'opacity-0' : 'opacity-100'}`} />
+                          </div>
+                        </button>
+                      </div>
                       <button className="w-full flex items-center justify-between p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
                         <span className="flex items-center gap-3"><Settings size={18} /> Settings</span>
                         <ChevronUp className="rotate-90 opacity-20" size={18} />
@@ -430,19 +481,19 @@ export default function App() {
             initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
-            className="flex-1 flex flex-col p-6"
+            className="flex-1 flex flex-col p-6 pt-40"
           >
             <header className="flex items-center gap-4 mb-10">
               <button 
                 onClick={() => setCurrentView('tabs')}
                 className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors"
               >
-                <ChevronLeft size={24} />
+                <ChevronLeft size={20} />
               </button>
-              <h2 className="text-2xl font-display font-bold italic">Session Setup</h2>
+              <h2 className="text-2xl font-display font-black italic tracking-tight">Session Setup</h2>
             </header>
 
-            <div className="flex-1 space-y-8 overflow-y-auto pr-2 custom-scrollbar pb-10">
+            <div className="flex-1 space-y-5 overflow-y-auto pr-2 custom-scrollbar pb-10">
               <ConfigStepper 
                 label="Rounds" 
                 value={config.rounds} 
@@ -688,28 +739,28 @@ function ConfigStepper({ label, value, onChange, isTime = false, step = 1 }: {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <span className="text-white/40 text-xs font-bold uppercase tracking-widest px-1">{label}</span>
-      <div className="flex items-center justify-between bg-white/5 rounded-[32px] p-2 border border-white/5">
+    <div className="flex flex-col gap-2">
+      <span className="text-white/40 text-[9px] font-bold uppercase tracking-widest px-2">{label}</span>
+      <div className="flex items-center justify-between bg-white/5 rounded-[20px] p-1 border border-white/5">
         <button 
           onClick={() => onChange(value - step)}
-          className="w-14 h-14 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-full transition-colors active:scale-90"
+          className="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-full transition-colors active:scale-90"
         >
-          <Minus size={24} />
+          <Minus size={18} />
         </button>
         
         <div className="flex flex-col items-center">
-          <span className="text-4xl font-display font-black tracking-tighter">
+          <span className="text-xl font-display font-black tracking-tighter">
             {formatValue(value)}
           </span>
-          {isTime && <span className="text-[10px] opacity-30 uppercase font-bold tracking-widest">Minutes</span>}
+          {isTime && <span className="text-[7px] opacity-30 uppercase font-bold tracking-widest">Minutes</span>}
         </div>
 
         <button 
           onClick={() => onChange(value + step)}
-          className="w-14 h-14 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-full transition-colors active:scale-90"
+          className="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-full transition-colors active:scale-90"
         >
-          <Plus size={24} />
+          <Plus size={18} />
         </button>
       </div>
     </div>

@@ -11,14 +11,60 @@
   --color-rest: #eab308;
   --color-warmup: #3b82f6;
   --color-bg: #151619;
+  --color-surface: rgba(255, 255, 255, 0.05);
+  --color-border: rgba(255, 255, 255, 0.1);
 }
 
 @layer base {
   body {
-    @apply bg-bg text-white font-sans antialiased overflow-hidden;
+    @apply bg-bg text-white font-sans antialiased overflow-hidden transition-colors duration-300;
+  }
+
+  body.light-mode {
+    --color-bg: #fdfdfd;
+    --color-surface: #ffffff;
+    --color-border: rgba(0, 0, 0, 0.08);
+    --color-warmup: #2563eb;
+    --color-fight: #16a34a;
+    --color-fight-warn: #dc2626;
+    --color-rest: #ca8a04;
+    @apply text-slate-900;
+  }
+
+  body.light-mode .bg-bg {
+    background-color: var(--color-bg);
+  }
+
+  body.light-mode .bg-white\/5 {
+    background-color: rgba(0, 0, 0, 0.03);
+  }
+
+  body.light-mode .border-white\/5,
+  body.light-mode .border-white\/10 {
+    border-color: var(--color-border);
+  }
+
+  body.light-mode .text-white\/40,
+  body.light-mode .text-white\/30,
+  body.light-mode .text-white\/60,
+  body.light-mode .text-white\/50 {
+    @apply text-slate-500;
   }
 }
 
 .timer-ring {
   transition: stroke-dashoffset 0.1s linear;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 10px;
 }
