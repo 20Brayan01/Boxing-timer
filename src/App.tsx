@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Play, Pause, RotateCcw, Settings, Volume2, VolumeX, 
   ChevronUp, ChevronDown, X, Home, Dumbbell, User, 
-  FastForward, Info, Award, History, Clock
+  FastForward, Info, Award, History, Clock, Star, Plus, Minus
 } from 'lucide-react';
 
 type TimerState = 'IDLE' | 'WARMUP' | 'FIGHT' | 'REST' | 'FINISHED';
@@ -33,6 +33,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [config, setConfig] = useState<Config>(DEFAULT_CONFIG);
   const [showConfig, setShowConfig] = useState(false);
+  const [showRating, setShowRating] = useState(false);
+  const [rating, setRating] = useState(0);
   
   // Timer State
   const [timerState, setTimerState] = useState<TimerState>('IDLE');
@@ -43,6 +45,14 @@ export default function App() {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+
+  // Auto-hide splash screen
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Sound generator
   const playSound = useCallback((frequency: number, duration: number) => {
@@ -81,6 +91,7 @@ export default function App() {
         playSound(880, 1.0);
         setTimerState('FINISHED');
         setIsActive(false);
+        setShowRating(true);
       }
     } else if (timerState === 'REST') {
       playSound(880, 0.5);
@@ -98,6 +109,10 @@ export default function App() {
     if (isActive && timeLeft > 0) {
       timerRef.current = setInterval(() => {
         setTimeLeft(prev => prev - 1);
+        // Warning beep for last 10 seconds of round
+        if (timerState === 'FIGHT' && timeLeft <= 11 && timeLeft > 1) {
+          playSound(660, 0.1);
+        }
       }, 1000);
     } else if (timeLeft === 0 && isActive) {
       handleTimerEnd();
@@ -106,7 +121,7 @@ export default function App() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isActive, timeLeft, handleTimerEnd]);
+  }, [isActive, timeLeft, handleTimerEnd, timerState, playSound]);
 
   const toggleTimer = () => {
     if (timerState === 'IDLE' || timerState === 'FINISHED') {
@@ -132,7 +147,8 @@ export default function App() {
 
   const getThemeColor = () => {
     switch (timerState) {
-      case 'FIGHT': return 'var(--color-fight)';
+      case 'FIGHT': 
+        return timeLeft <= 10 ? 'var(--color-fight-warn)' : 'var(--color-fight)';
       case 'REST': return 'var(--color-rest)';
       case 'WARMUP': return 'var(--color-warmup)';
       default: return '#333';
@@ -164,22 +180,21 @@ export default function App() {
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="mb-12"
         >
-          <div className="w-32 h-32 bg-fight rounded-[32px] flex items-center justify-center mb-6 shadow-2xl shadow-fight/20 rotate-12">
+          <div className="w-32 h-32 bg-fight-warn rounded-[32px] flex items-center justify-center mb-6 shadow-2xl shadow-fight-warn/20 rotate-12">
             <Dumbbell size={64} className="text-white -rotate-12" />
           </div>
           <h1 className="font-display text-5xl font-extrabold italic tracking-tighter mb-2">SparTime</h1>
           <p className="text-white/40 font-medium tracking-wide">TRAIN LIKE A PRO</p>
         </motion.div>
-
-        <motion.button
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          onClick={() => setShowSplash(false)}
-          className="w-full max-w-xs py-5 bg-white text-black font-bold rounded-2xl shadow-xl active:scale-95 transition-transform"
-        >
-          Get Started
-        </motion.button>
+        
+        <div className="w-48 h-1 bg-white/10 rounded-full overflow-hidden">
+          <motion.div 
+            className="h-full bg-fight-warn"
+            initial={{ width: 0 }}
+            animate={{ width: "100%" }}
+            transition={{ duration: 3, ease: "linear" }}
+          />
+        </div>
       </motion.div>
     );
   }
@@ -237,7 +252,7 @@ export default function App() {
                     r={radius}
                     fill="transparent"
                     stroke={getThemeColor()}
-                    strokeWidth="12"
+                    strokeWidth={timerState === 'FIGHT' && timeLeft <= 10 ? "16" : "12"}
                     strokeLinecap="round"
                     strokeDasharray={circumference}
                     animate={{ strokeDashoffset: offset }}
@@ -249,14 +264,14 @@ export default function App() {
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                   <AnimatePresence mode="wait">
                     <motion.span
-                      key={timerState}
+                      key={timerState + (timerState === 'FIGHT' && timeLeft <= 10 ? '-warn' : '')}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
                       className="font-display text-xl font-bold uppercase tracking-widest mb-1"
                       style={{ color: getThemeColor() }}
                     >
-                      {timerState === 'IDLE' ? 'Ready' : timerState}
+                      {timerState === 'FIGHT' && timeLeft <= 10 ? 'Finish Strong!' : (timerState === 'IDLE' ? 'Ready' : timerState)}
                     </motion.span>
                   </AnimatePresence>
                   
@@ -331,7 +346,7 @@ export default function App() {
               <h2 className="text-3xl font-display font-extrabold italic mb-6">Workouts</h2>
               <div className="grid gap-4">
                 {[
-                  { name: 'Heavy Bag Blast', rounds: 12, time: '3:00', icon: <Dumbbell className="text-fight" /> },
+                  { name: 'Heavy Bag Blast', rounds: 12, time: '3:00', icon: <Dumbbell className="text-fight-warn" /> },
                   { name: 'Speed Bag Drill', rounds: 6, time: '2:00', icon: <Clock className="text-warmup" /> },
                   { name: 'Shadow Boxing', rounds: 3, time: '3:00', icon: <User className="text-rest" /> },
                 ].map((w, i) => (
@@ -363,7 +378,7 @@ export default function App() {
               <h2 className="text-3xl font-display font-extrabold italic mb-8">Profile</h2>
               
               <div className="flex items-center gap-6 mb-10">
-                <div className="w-20 h-20 bg-gradient-to-br from-fight to-warmup rounded-3xl flex items-center justify-center text-3xl font-display font-black italic">
+                <div className="w-20 h-20 bg-gradient-to-br from-fight-warn to-warmup rounded-3xl flex items-center justify-center text-3xl font-display font-black italic">
                   JD
                 </div>
                 <div>
@@ -420,49 +435,41 @@ export default function App() {
               initial={{ y: 100 }}
               animate={{ y: 0 }}
               exit={{ y: 100 }}
-              className="w-full max-w-md bg-zinc-900 border border-white/10 rounded-3xl p-8 shadow-2xl overflow-hidden"
+              className="w-full max-w-md bg-zinc-900 border border-white/10 rounded-3xl p-8 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
             >
-              <div className="flex justify-between items-center mb-8">
+              <div className="flex justify-between items-center mb-8 shrink-0">
                 <h2 className="text-2xl font-display font-bold italic">Session Setup</h2>
                 <button onClick={() => setShowConfig(false)} className="p-2 hover:bg-white/5 rounded-full">
                   <X size={24} />
                 </button>
               </div>
 
-              <div className="space-y-8">
-                <ConfigSlider 
+              <div className="space-y-8 overflow-y-auto pr-2 custom-scrollbar">
+                <ConfigStepper 
                   label="Rounds" 
                   value={config.rounds} 
-                  min={1} 
-                  max={15} 
-                  onChange={(v) => setConfig(prev => ({ ...prev, rounds: v }))}
+                  onChange={(v) => setConfig(prev => ({ ...prev, rounds: Math.max(1, v) }))}
                 />
-                <ConfigSlider 
+                <ConfigStepper 
                   label="Fight Time" 
                   value={config.fightTime} 
-                  min={30} 
-                  max={600} 
-                  step={30}
                   isTime
-                  onChange={(v) => setConfig(prev => ({ ...prev, fightTime: v }))}
+                  onChange={(v) => setConfig(prev => ({ ...prev, fightTime: Math.max(10, v) }))}
+                  step={30}
                 />
-                <ConfigSlider 
+                <ConfigStepper 
                   label="Rest Time" 
                   value={config.restTime} 
-                  min={10} 
-                  max={120} 
-                  step={10}
                   isTime
-                  onChange={(v) => setConfig(prev => ({ ...prev, restTime: v }))}
+                  onChange={(v) => setConfig(prev => ({ ...prev, restTime: Math.max(5, v) }))}
+                  step={10}
                 />
-                <ConfigSlider 
+                <ConfigStepper 
                   label="Warmup" 
                   value={config.warmupTime} 
-                  min={5} 
-                  max={60} 
-                  step={5}
                   isTime
-                  onChange={(v) => setConfig(prev => ({ ...prev, warmupTime: v }))}
+                  onChange={(v) => setConfig(prev => ({ ...prev, warmupTime: Math.max(5, v) }))}
+                  step={5}
                 />
               </div>
 
@@ -471,9 +478,59 @@ export default function App() {
                   setShowConfig(false);
                   resetTimer();
                 }}
-                className="w-full mt-10 py-4 bg-white text-black font-bold rounded-2xl active:scale-95 transition-transform"
+                className="w-full mt-10 shrink-0 py-4 bg-white text-black font-bold rounded-2xl active:scale-95 transition-transform"
               >
                 Apply Configuration
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Rating Modal */}
+      <AnimatePresence>
+        {showRating && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="w-full max-w-sm bg-zinc-900 border border-white/10 rounded-[40px] p-10 text-center shadow-2xl"
+            >
+              <div className="w-20 h-20 bg-rest/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Award size={40} className="text-rest" />
+              </div>
+              <h2 className="text-3xl font-display font-extrabold italic mb-2">Finished Workout!</h2>
+              <p className="text-white/60 mb-8">Congratulations on completing your session. You crushed it!</p>
+              
+              <div className="flex justify-center gap-2 mb-10">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <button 
+                    key={s} 
+                    onClick={() => setRating(s)}
+                    className="transition-transform active:scale-125"
+                  >
+                    <Star 
+                      size={32} 
+                      fill={s <= rating ? "var(--color-rest)" : "transparent"} 
+                      stroke={s <= rating ? "var(--color-rest)" : "rgba(255,255,255,0.2)"} 
+                    />
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => {
+                  setShowRating(false);
+                  resetTimer();
+                }}
+                className="w-full py-4 bg-white text-black font-bold rounded-2xl active:scale-95 transition-transform"
+              >
+                Done
               </button>
             </motion.div>
           </motion.div>
@@ -487,7 +544,7 @@ function NavButton({ active, onClick, icon, label }: { active: boolean; onClick:
   return (
     <button 
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 transition-all ${active ? 'text-fight scale-110' : 'text-white/30 hover:text-white/50'}`}
+      className={`flex flex-col items-center gap-1 transition-all ${active ? 'text-fight-warn scale-110' : 'text-white/30 hover:text-white/50'}`}
     >
       {icon}
       <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
@@ -495,14 +552,12 @@ function NavButton({ active, onClick, icon, label }: { active: boolean; onClick:
   );
 }
 
-function ConfigSlider({ label, value, min, max, step = 1, onChange, isTime = false }: { 
+function ConfigStepper({ label, value, onChange, isTime = false, step = 1 }: { 
   label: string; 
   value: number; 
-  min: number; 
-  max: number; 
-  step?: number;
   onChange: (v: number) => void;
   isTime?: boolean;
+  step?: number;
 }) {
   const formatValue = (v: number) => {
     if (!isTime) return v;
@@ -512,21 +567,29 @@ function ConfigSlider({ label, value, min, max, step = 1, onChange, isTime = fal
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex justify-between items-center px-1">
-        <span className="text-white/40 text-xs font-bold uppercase tracking-widest">{label}</span>
-        <span className="text-xl font-mono font-bold text-white">{formatValue(value)}</span>
-      </div>
-      <div className="relative h-10 flex items-center">
-        <input 
-          type="range" 
-          min={min} 
-          max={max} 
-          step={step} 
-          value={value} 
-          onChange={(e) => onChange(parseInt(e.target.value))}
-          className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-fight"
-        />
+    <div className="flex flex-col gap-4">
+      <span className="text-white/40 text-xs font-bold uppercase tracking-widest px-1">{label}</span>
+      <div className="flex items-center justify-between bg-white/5 rounded-[32px] p-2 border border-white/5">
+        <button 
+          onClick={() => onChange(value - step)}
+          className="w-14 h-14 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-full transition-colors active:scale-90"
+        >
+          <Minus size={24} />
+        </button>
+        
+        <div className="flex flex-col items-center">
+          <span className="text-4xl font-display font-black tracking-tighter">
+            {formatValue(value)}
+          </span>
+          {isTime && <span className="text-[10px] opacity-30 uppercase font-bold tracking-widest">Minutes</span>}
+        </div>
+
+        <button 
+          onClick={() => onChange(value + step)}
+          className="w-14 h-14 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-full transition-colors active:scale-90"
+        >
+          <Plus size={24} />
+        </button>
       </div>
     </div>
   );

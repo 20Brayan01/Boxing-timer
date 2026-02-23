@@ -6,8 +6,9 @@
   --font-display: "Outfit", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  --color-fight: #ef4444;
-  --color-rest: #22c55e;
+  --color-fight: #22c55e;
+  --color-fight-warn: #ef4444;
+  --color-rest: #eab308;
   --color-warmup: #3b82f6;
   --color-bg: #151619;
 }
