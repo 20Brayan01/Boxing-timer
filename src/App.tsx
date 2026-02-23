@@ -112,6 +112,163 @@ const WORKOUTS: Workout[] = [
       { round: 11, instruction: 'Championship Rounds: Dig deep.' },
       { round: 12, instruction: 'Final Stand: Leave it all in the ring.' },
     ]
+  },
+  {
+    id: '4',
+    name: 'Speed Demon',
+    description: 'Ultra-fast combinations to overwhelm your opponent.',
+    rounds: 10,
+    fightTime: 120,
+    restTime: 30,
+    category: 'Speed',
+    difficulty: 'Advanced',
+    completions: 450,
+    rating: 4.7,
+    isPremium: true,
+    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
+    instructions: [
+      { round: 1, instruction: 'Rapid Jabs: Focus on hand speed.' },
+      { round: 2, instruction: '1-2-1-2: Non-stop straight punches.' },
+      { round: 3, instruction: 'Double Hooks: Fast rotation.' },
+      { round: 4, instruction: 'Speed Slipping: Move your head fast.' },
+      { round: 5, instruction: 'Blitz: 10 seconds of all-out speed.' },
+      { round: 6, instruction: 'Active Rest: Keep moving.' },
+      { round: 7, instruction: 'Fast Feet: Shadow box with footwork.' },
+      { round: 8, instruction: 'Counter Speed: React and return.' },
+      { round: 9, instruction: 'Volume: High punch count.' },
+      { round: 10, instruction: 'Final Sprint: Max speed to the end.' },
+    ]
+  },
+  {
+    id: '5',
+    name: 'Power Puncher',
+    description: 'Focus on maximum impact and body mechanics.',
+    rounds: 8,
+    fightTime: 180,
+    restTime: 60,
+    category: 'Power',
+    difficulty: 'Intermediate',
+    completions: 680,
+    rating: 4.6,
+    isPremium: true,
+    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/l0HlT6fS6S6S6S6S6/giphy.gif',
+    instructions: [
+      { round: 1, instruction: 'Heavy Cross: Sit on your punches.' },
+      { round: 2, instruction: 'Body Hooks: Dig into the ribs.' },
+      { round: 3, instruction: 'Overhand Right: Loop it over the guard.' },
+      { round: 4, instruction: 'Lead Hook: Explosive lead hand power.' },
+      { round: 5, instruction: 'Power Combos: 1-2-3 with intent.' },
+      { round: 6, instruction: 'Bag Work: Move the bag with every hit.' },
+      { round: 7, instruction: 'Uppercut Power: Drive from the legs.' },
+      { round: 8, instruction: 'Finish: Power shots only.' },
+    ]
+  },
+  {
+    id: '6',
+    name: 'Stamina King',
+    description: 'Long rounds designed to build championship endurance.',
+    rounds: 15,
+    fightTime: 180,
+    restTime: 30,
+    category: 'Stamina',
+    difficulty: 'Advanced',
+    completions: 210,
+    rating: 4.9,
+    isPremium: true,
+    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
+    instructions: [
+      { round: 1, instruction: 'Pace Yourself: Find a rhythm.' },
+      { round: 2, instruction: 'Constant Motion: Never stop moving.' },
+      { round: 3, instruction: 'Breathe: Focus on deep breaths.' },
+      { round: 4, instruction: 'Volume: Keep the hands busy.' },
+      { round: 5, instruction: 'Push Through: The first wall.' },
+      { round: 6, instruction: 'Active Recovery: Light movement.' },
+      { round: 7, instruction: 'Mental Toughness: Stay focused.' },
+      { round: 8, instruction: 'Deep Water: Keep swimming.' },
+      { round: 9, instruction: 'Consistency: Same volume every round.' },
+      { round: 10, instruction: 'Second Wind: Find new energy.' },
+      { round: 11, instruction: 'Dig Deep: Championship rounds start now.' },
+      { round: 12, instruction: 'Endurance: Don\'t let the form slip.' },
+      { round: 13, instruction: 'Willpower: Almost there.' },
+      { round: 14, instruction: 'Final Push: Everything you have.' },
+      { round: 15, instruction: 'The Finish Line: Give it your all.' },
+    ]
+  },
+  {
+    id: '7',
+    name: 'Technical Master',
+    description: 'Refine your defense and counter-punching skills.',
+    rounds: 10,
+    fightTime: 180,
+    restTime: 60,
+    category: 'Technique',
+    difficulty: 'Advanced',
+    completions: 390,
+    rating: 4.8,
+    isPremium: true,
+    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/l0HlT6fS6S6S6S6S6/giphy.gif',
+    instructions: [
+      { round: 1, instruction: 'Check Hook: Pivot and hook.' },
+      { round: 2, instruction: 'Slip and Counter: Move and return.' },
+      { round: 3, instruction: 'Parry and Jab: Deflect and hit.' },
+      { round: 4, instruction: 'Shoulder Roll: Deflect with the shoulder.' },
+      { round: 5, instruction: 'Feints: Draw out the reaction.' },
+      { round: 6, instruction: 'Angle Changes: Pivot after every combo.' },
+      { round: 7, instruction: 'Inside Fighting: Short punches.' },
+      { round: 8, instruction: 'Distance Control: Use your reach.' },
+      { round: 9, instruction: 'Ring Generalship: Control the center.' },
+      { round: 10, instruction: 'Technical Sparring: Put it all together.' },
+    ]
+  },
+  {
+    id: '8',
+    name: 'Blitz Attack',
+    description: 'Explosive bursts of energy to finish fights.',
+    rounds: 6,
+    fightTime: 120,
+    restTime: 60,
+    category: 'Speed',
+    difficulty: 'Intermediate',
+    completions: 520,
+    rating: 4.4,
+    isPremium: true,
+    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
+    instructions: [
+      { round: 1, instruction: 'Explosive 1-2: Burst in and out.' },
+      { round: 2, instruction: 'Hook Blitz: Fast hooks to head and body.' },
+      { round: 3, instruction: 'Step-in Combos: Close the gap fast.' },
+      { round: 4, instruction: 'Reactive Speed: Burst on the whistle.' },
+      { round: 5, instruction: 'All-out Blitz: 20 seconds hard.' },
+      { round: 6, instruction: 'Final Burst: Empty the tank.' },
+    ]
+  },
+  {
+    id: '9',
+    name: 'Heavy Hitter',
+    description: 'The ultimate power workout for heavyweights.',
+    rounds: 12,
+    fightTime: 180,
+    restTime: 60,
+    category: 'Power',
+    difficulty: 'Pro',
+    completions: 150,
+    rating: 5.0,
+    isPremium: true,
+    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/l0HlT6fS6S6S6S6S6/giphy.gif',
+    instructions: [
+      { round: 1, instruction: 'Foundation: Solid base for power.' },
+      { round: 2, instruction: 'The Cross: Your primary weapon.' },
+      { round: 3, instruction: 'Lead Hook: Devastating power.' },
+      { round: 4, instruction: 'Body Work: Break them down.' },
+      { round: 5, instruction: 'Uppercuts: Lift them up.' },
+      { round: 6, instruction: 'Combinations: Power in every shot.' },
+      { round: 7, instruction: 'Heavy Bag: Make it swing.' },
+      { round: 8, instruction: 'Overhand: The finisher.' },
+      { round: 9, instruction: 'Inside Power: Short and hard.' },
+      { round: 10, instruction: 'Pressure: Force the mistake.' },
+      { round: 11, instruction: 'The Grind: Keep the power up.' },
+      { round: 12, instruction: 'KO Shot: Find the opening.' },
+    ]
   }
 ];
 
@@ -138,6 +295,8 @@ export default function App() {
   
   const [config, setConfig] = useState<Config>(DEFAULT_CONFIG);
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
   const [showRating, setShowRating] = useState(false);
   const [rating, setRating] = useState(0);
   
@@ -559,9 +718,70 @@ export default function App() {
                         <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Monkey Squad</span>
                       </div>
                     </div>
+
+                    {(selectedCategories.length > 0 || selectedDifficulties.length > 0) && (
+                      <button 
+                        onClick={() => {
+                          setSelectedCategories([]);
+                          setSelectedDifficulties([]);
+                        }}
+                        className="text-[10px] font-bold text-warmup uppercase tracking-widest mb-4 flex items-center gap-1"
+                      >
+                        <X size={12} /> Clear Filters
+                      </button>
+                    )}
+
+                    {/* Filters */}
+                    <div className="space-y-4 mb-6">
+                      <div className="flex flex-col gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Category</span>
+                        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                          {['Stamina', 'Technique', 'Power', 'Speed'].map(cat => (
+                            <button
+                              key={cat}
+                              onClick={() => setSelectedCategories(prev => 
+                                prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+                              )}
+                              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
+                                selectedCategories.includes(cat)
+                                  ? 'bg-warmup border-warmup text-white shadow-lg shadow-warmup/20'
+                                  : isDarkMode ? 'glass-card border-white/5 opacity-60' : 'bg-white border-slate-200 opacity-60'
+                              }`}
+                            >
+                              {cat}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Difficulty</span>
+                        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                          {['Beginner', 'Intermediate', 'Advanced', 'Pro'].map(diff => (
+                            <button
+                              key={diff}
+                              onClick={() => setSelectedDifficulties(prev => 
+                                prev.includes(diff) ? prev.filter(d => d !== diff) : [...prev, diff]
+                              )}
+                              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
+                                selectedDifficulties.includes(diff)
+                                  ? 'bg-amber-500 border-amber-500 text-black shadow-lg shadow-amber-500/20'
+                                  : isDarkMode ? 'glass-card border-white/5 opacity-60' : 'bg-white border-slate-200 opacity-60'
+                              }`}
+                            >
+                              {diff}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                     
                     <div className="grid gap-4">
-                      {WORKOUTS.map((w) => (
+                      {WORKOUTS.filter(w => {
+                        const catMatch = selectedCategories.length === 0 || selectedCategories.includes(w.category);
+                        const diffMatch = selectedDifficulties.length === 0 || selectedDifficulties.includes(w.difficulty);
+                        return catMatch && diffMatch;
+                      }).map((w) => (
                         <div 
                           key={w.id} 
                           onClick={() => {

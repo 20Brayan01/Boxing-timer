@@ -170,3 +170,12 @@
   background: var(--color-border);
   border-radius: 10px;
 }
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
