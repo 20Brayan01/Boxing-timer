@@ -46,6 +46,7 @@ export default function App() {
   const [timeLeft, setTimeLeft] = useState(config.warmupTime);
   const [isActive, setIsActive] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [totalSecondsElapsed, setTotalSecondsElapsed] = useState(0);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -124,6 +125,7 @@ export default function App() {
     if (isActive && timeLeft > 0) {
       timerRef.current = setInterval(() => {
         setTimeLeft(prev => prev - 1);
+        setTotalSecondsElapsed(prev => prev + 1);
         if (timerState === 'FIGHT' && timeLeft <= 11 && timeLeft > 1) {
           playSound(660, 0.1);
         }
@@ -147,6 +149,7 @@ export default function App() {
     setCurrentRound(1);
     setIsActive(true);
     setCurrentView('timer');
+    setTotalSecondsElapsed(0);
   };
 
   const resetTimer = () => {
@@ -154,6 +157,7 @@ export default function App() {
     setTimerState('IDLE');
     setCurrentRound(1);
     setTimeLeft(config.warmupTime);
+    setTotalSecondsElapsed(0);
   };
 
   const formatTime = (seconds: number) => {
@@ -483,34 +487,7 @@ export default function App() {
             exit={{ opacity: 0, x: -100 }}
             className="flex-1 flex flex-col p-6 overflow-y-auto custom-scrollbar"
           >
-            {/* Top Space with Premium Card */}
-            <div className="min-h-[45vh] flex flex-col justify-end pb-8">
-              {!isPremium && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/20 rounded-3xl p-6 relative overflow-hidden"
-                >
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Star size={16} className="text-amber-500 fill-amber-500" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500">Pro Recommendation</span>
-                    </div>
-                    <h3 className="text-lg font-display font-black italic mb-1">Get Prebuilt Workouts</h3>
-                    <p className="text-sm opacity-60 mb-4">Upgrade to Pro to access expert-designed routines and save your own presets.</p>
-                    <button 
-                      onClick={() => setIsPremium(true)}
-                      className="text-xs font-bold underline underline-offset-4 hover:text-amber-500 transition-colors"
-                    >
-                      Learn more about Pro
-                    </button>
-                  </div>
-                  <Zap size={80} className="absolute -right-4 -bottom-4 text-amber-500/10 -rotate-12" />
-                </motion.div>
-              )}
-            </div>
-
-            <header className="flex items-center gap-4 mb-10">
+            <header className="flex items-center gap-4 mb-8">
               <button 
                 onClick={() => setCurrentView('tabs')}
                 className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors"
@@ -520,33 +497,55 @@ export default function App() {
               <h2 className="text-2xl font-display font-black italic tracking-tight">Session Setup</h2>
             </header>
 
+            {/* Top Space with Premium Card */}
+            <div className="min-h-[35vh] flex flex-col justify-end pb-8">
+              {!isPremium && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/20 rounded-3xl p-6 relative overflow-hidden group"
+                >
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Star size={16} className="text-amber-500 fill-amber-500" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500">Pro Recommendation</span>
+                    </div>
+                    <h3 className="text-lg font-display font-black italic mb-1">Get Prebuilt Workouts</h3>
+                    <p className="text-sm opacity-60 mb-5">Upgrade to Pro to access expert-designed routines and save your own presets.</p>
+                    <button 
+                      onClick={() => setIsPremium(true)}
+                      className="w-full py-3 bg-amber-500 text-black font-bold rounded-xl active:scale-95 transition-all hover:bg-amber-400 shadow-lg shadow-amber-500/20"
+                    >
+                      Get full access NOW
+                    </button>
+                  </div>
+                  <Zap size={80} className="absolute -right-4 -bottom-4 text-amber-500/10 -rotate-12 group-hover:scale-110 transition-transform" />
+                </motion.div>
+              )}
+            </div>
+
             <div className="space-y-5 pb-10">
-              <ConfigStepper 
-                label="Rounds" 
-                value={config.rounds} 
-                onChange={(v) => setConfig(prev => ({ ...prev, rounds: Math.max(1, v) }))}
-              />
-              <ConfigStepper 
-                label="Fight Time" 
-                value={config.fightTime} 
-                isTime
-                onChange={(v) => setConfig(prev => ({ ...prev, fightTime: Math.max(10, v) }))}
-                step={30}
-              />
-              <ConfigStepper 
-                label="Rest Time" 
-                value={config.restTime} 
-                isTime
-                onChange={(v) => setConfig(prev => ({ ...prev, restTime: Math.max(5, v) }))}
-                step={10}
-              />
-              <ConfigStepper 
-                label="Warmup" 
-                value={config.warmupTime} 
-                isTime
-                onChange={(v) => setConfig(prev => ({ ...prev, warmupTime: Math.max(5, v) }))}
-                step={5}
-              />
+              {[
+                { label: "Rounds", value: config.rounds, onChange: (v: number) => setConfig(prev => ({ ...prev, rounds: Math.max(1, v) })) },
+                { label: "Fight Time", value: config.fightTime, isTime: true, step: 30, onChange: (v: number) => setConfig(prev => ({ ...prev, fightTime: Math.max(10, v) })) },
+                { label: "Rest Time", value: config.restTime, isTime: true, step: 10, onChange: (v: number) => setConfig(prev => ({ ...prev, restTime: Math.max(5, v) })) },
+                { label: "Warmup", value: config.warmupTime, isTime: true, step: 5, onChange: (v: number) => setConfig(prev => ({ ...prev, warmupTime: Math.max(5, v) })) },
+              ].map((item, idx) => (
+                <motion.div
+                  key={item.label}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                >
+                  <ConfigStepper 
+                    label={item.label} 
+                    value={item.value} 
+                    isTime={item.isTime}
+                    onChange={item.onChange}
+                    step={item.step}
+                  />
+                </motion.div>
+              ))}
             </div>
 
             <button
@@ -562,13 +561,13 @@ export default function App() {
         {currentView === 'timer' && (
           <motion.div 
             key="timer"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.1 }}
-            className="flex-1 flex flex-col items-center justify-center p-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex-1 flex flex-col items-center justify-center p-6 pt-2"
           >
             {/* Header */}
-            <div className="w-full max-w-md flex justify-between items-center mb-12 z-10">
+            <div className="w-full max-w-md flex justify-between items-center mb-4 z-10">
               <button 
                 onClick={() => {
                   setIsActive(false);
@@ -611,14 +610,19 @@ export default function App() {
                   strokeWidth={timerState === 'FIGHT' && timeLeft <= 10 ? "16" : "12"}
                   strokeLinecap="round"
                   strokeDasharray={circumference}
-                  animate={{ strokeDashoffset: offset }}
+                  animate={{ 
+                    strokeDashoffset: offset,
+                    rotate: -totalSecondsElapsed * 6 // 6 degrees per second
+                  }}
                   transition={{ 
                     duration: 1, 
                     ease: "linear",
-                    // Avoid the "refill sweep" by disabling transition when offset jumps back to circumference
-                    strokeDashoffset: { duration: timeLeft === (timerState === 'WARMUP' ? config.warmupTime : timerState === 'FIGHT' ? config.fightTime : config.restTime) ? 0 : 1 }
+                    strokeDashoffset: { 
+                      duration: timeLeft === (timerState === 'WARMUP' ? config.warmupTime : timerState === 'FIGHT' ? config.fightTime : config.restTime) ? 0 : 1 
+                    }
                   }}
                   className="timer-ring"
+                  style={{ transformOrigin: 'center' }}
                 />
               </svg>
 
