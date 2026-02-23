@@ -280,30 +280,30 @@ export default function App() {
                     className="space-y-8"
                   >
                     {/* Welcome Card */}
-                    <div className="relative overflow-hidden bg-gradient-to-br from-fight-warn/20 to-warmup/20 border border-white/10 rounded-[32px] p-8">
+                    <div className={`relative overflow-hidden border rounded-[32px] p-8 ${isDarkMode ? 'bg-gradient-to-br from-fight-warn/20 to-warmup/20 border-white/10' : 'bg-gradient-to-br from-amber-50 to-blue-50 border-slate-100 shadow-sm'}`}>
                       <div className="relative z-10">
                         <h2 className="text-3xl font-display font-black italic mb-2">Ready to Spar?</h2>
                         <p className="text-white/60 mb-6 max-w-[200px]">Set your rounds and push your limits today.</p>
                         <button 
                           onClick={() => setCurrentView('setup')}
-                          className="px-8 py-4 bg-white text-black font-bold rounded-2xl flex items-center gap-2 active:scale-95 transition-transform"
+                          className={`px-8 py-4 font-bold rounded-2xl flex items-center gap-2 active:scale-95 transition-all shadow-lg ${isDarkMode ? 'bg-white text-black' : 'bg-white text-slate-900 shadow-slate-200/50'}`}
                         >
                           <Play size={18} fill="currentColor" />
                           Start Session
                         </button>
                       </div>
-                      <Dumbbell size={120} className="absolute -right-8 -bottom-8 text-white/5 rotate-12" />
+                      <Dumbbell size={120} className={`absolute -right-8 -bottom-8 rotate-12 ${isDarkMode ? 'text-white/5' : 'text-blue-500/5'}`} />
                     </div>
 
                     {/* Stats Row */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-                        <TrendingUp size={20} className="text-rest mb-2" />
+                        <TrendingUp size={20} className={isDarkMode ? 'text-rest mb-2' : 'text-orange-500 mb-2'} />
                         <div className="text-2xl font-display font-bold">128</div>
                         <div className="text-[10px] uppercase tracking-widest opacity-40">Total Rounds</div>
                       </div>
                       <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-                        <Clock size={20} className="text-warmup mb-2" />
+                        <Clock size={20} className={isDarkMode ? 'text-warmup mb-2' : 'text-blue-500 mb-2'} />
                         <div className="text-2xl font-display font-bold">4.2h</div>
                         <div className="text-[10px] uppercase tracking-widest opacity-40">Training Time</div>
                       </div>
@@ -311,7 +311,7 @@ export default function App() {
 
                     {/* Premium CTA */}
                     {!isPremium && (
-                      <div className="bg-zinc-900 border border-yellow-500/30 rounded-[32px] p-8 relative overflow-hidden group">
+                      <div className={`border rounded-[32px] p-8 relative overflow-hidden group ${isDarkMode ? 'bg-zinc-900 border-yellow-500/30' : 'bg-amber-50 border-amber-100 shadow-sm'}`}>
                         <div className="absolute top-0 right-0 p-4">
                           <Zap size={24} className="text-yellow-500 animate-pulse" />
                         </div>
@@ -325,12 +325,12 @@ export default function App() {
                           </div>
                           <button 
                             onClick={() => setIsPremium(true)}
-                            className="px-6 py-3 bg-yellow-500 text-black font-bold rounded-xl active:scale-95 transition-transform"
+                            className={`px-6 py-3 font-bold rounded-xl active:scale-95 transition-transform ${isDarkMode ? 'bg-yellow-500 text-black' : 'bg-amber-200 text-slate-900'}`}
                           >
                             $1.99 / mo
                           </button>
                         </div>
-                        <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-yellow-500/5 rounded-full blur-3xl group-hover:bg-yellow-500/10 transition-colors" />
+                        <div className={`absolute -left-10 -bottom-10 w-32 h-32 rounded-full blur-3xl group-hover:bg-yellow-500/10 transition-colors ${isDarkMode ? 'bg-yellow-500/5' : 'bg-amber-200/20'}`} />
                       </div>
                     )}
 
@@ -348,18 +348,18 @@ export default function App() {
                               setConfig({ ...config, rounds: p.rounds, fightTime: parseInt(p.time) * 60 });
                               setCurrentView('setup');
                             }}
-                            className="w-full flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/10 transition-colors"
+                            className={`w-full flex items-center justify-between p-4 border rounded-2xl transition-all ${isDarkMode ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-slate-50 border-slate-100 hover:bg-slate-100'}`}
                           >
                             <div className="flex items-center gap-4">
-                              <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center">
-                                <RotateCcw size={18} className="text-white/40" />
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDarkMode ? 'bg-white/5' : 'bg-white shadow-sm'}`}>
+                                <RotateCcw size={18} className={isDarkMode ? 'text-white/40' : 'text-slate-400'} />
                               </div>
                               <div className="text-left">
                                 <div className="font-bold">{p.name}</div>
                                 <div className="text-[10px] opacity-40 uppercase tracking-widest">{p.rounds} Rounds • {p.time} min</div>
                               </div>
                             </div>
-                            <ChevronUp className="rotate-90 opacity-20" size={18} />
+                            <ChevronLeft className="rotate-180 opacity-20" size={18} />
                           </button>
                         ))}
                       </div>
@@ -470,12 +470,11 @@ export default function App() {
               </AnimatePresence>
             </main>
 
-            {/* Bottom Navigation */}
-            <nav className="fixed bottom-0 left-0 right-0 bg-zinc-900/80 backdrop-blur-xl border-t border-white/5 px-6 py-4 flex justify-around items-center z-50">
-              <NavButton active={activeTab === 'home'} onClick={() => setActiveTab('home')} icon={<Home size={24} />} label="Home" />
-              <NavButton active={activeTab === 'workouts'} onClick={() => setActiveTab('workouts')} icon={<Dumbbell size={24} />} label="Workouts" />
-              <NavButton active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<User size={24} />} label="Profile" />
-            </nav>
+      <nav className="fixed bottom-0 left-0 right-0 bg-zinc-900/80 backdrop-blur-xl border-t border-white/5 px-6 py-4 flex justify-around items-center z-50">
+        <NavButton active={activeTab === 'home'} onClick={() => setActiveTab('home')} icon={<Home size={24} />} label="Home" isDarkMode={isDarkMode} />
+        <NavButton active={activeTab === 'workouts'} onClick={() => setActiveTab('workouts')} icon={<Dumbbell size={24} />} label="Workouts" isDarkMode={isDarkMode} />
+        <NavButton active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<User size={24} />} label="Profile" isDarkMode={isDarkMode} />
+      </nav>
           </motion.div>
         )}
 
@@ -743,11 +742,11 @@ export default function App() {
   );
 }
 
-function NavButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
+function NavButton({ active, onClick, icon, label, isDarkMode }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string; isDarkMode: boolean }) {
   return (
     <button 
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 transition-all ${active ? 'text-fight-warn scale-110' : 'text-white/30 hover:text-white/50'}`}
+      className={`flex flex-col items-center gap-1 transition-all ${active ? (isDarkMode ? 'text-fight-warn' : 'text-red-500') + ' scale-110' : 'text-white/30 hover:text-white/50'}`}
     >
       {icon}
       <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
