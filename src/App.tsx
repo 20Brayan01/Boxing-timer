@@ -15,7 +15,105 @@ import {
 
 type TimerState = 'IDLE' | 'WARMUP' | 'FIGHT' | 'REST' | 'FINISHED';
 type Tab = 'home' | 'workouts' | 'profile';
-type View = 'tabs' | 'setup' | 'timer';
+type View = 'tabs' | 'setup' | 'timer' | 'workout-detail';
+
+interface RoundInstruction {
+  round: number;
+  instruction: string;
+}
+
+interface Workout {
+  id: string;
+  name: string;
+  description: string;
+  rounds: number;
+  fightTime: number;
+  restTime: number;
+  category: 'Stamina' | 'Technique' | 'Power' | 'Speed';
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced' | 'Pro';
+  completions: number;
+  rating: number;
+  isPremium: boolean;
+  gifUrl: string;
+  instructions: RoundInstruction[];
+}
+
+const WORKOUTS: Workout[] = [
+  {
+    id: '1',
+    name: 'The 12 Jabs',
+    description: 'Master the most important punch in boxing. Focus on snap and precision.',
+    rounds: 6,
+    fightTime: 180,
+    restTime: 60,
+    category: 'Technique',
+    difficulty: 'Beginner',
+    completions: 1240,
+    rating: 4.8,
+    isPremium: false,
+    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
+    instructions: [
+      { round: 1, instruction: 'Double Jab: Focus on the second jab snap.' },
+      { round: 2, instruction: 'Jab to Body: Change levels, keep eyes up.' },
+      { round: 3, instruction: 'Jab-Cross: Basic 1-2 combo.' },
+      { round: 4, instruction: 'Step-in Jab: Close the distance.' },
+      { round: 5, instruction: 'Counter Jab: Slip and return.' },
+      { round: 6, instruction: 'Speed Jabs: Maximum volume.' },
+    ]
+  },
+  {
+    id: '2',
+    name: 'Heavy Bag Blast',
+    description: 'High intensity interval training on the heavy bag.',
+    rounds: 8,
+    fightTime: 120,
+    restTime: 30,
+    category: 'Stamina',
+    difficulty: 'Intermediate',
+    completions: 850,
+    rating: 4.5,
+    isPremium: false,
+    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/l0HlT6fS6S6S6S6S6/giphy.gif',
+    instructions: [
+      { round: 1, instruction: 'Warmup: Light punches, move around the bag.' },
+      { round: 2, instruction: 'Power Hooks: Focus on hip rotation.' },
+      { round: 3, instruction: 'Straight Punches: 1-2-1-2 non-stop.' },
+      { round: 4, instruction: 'Body-Head: Upstairs, downstairs.' },
+      { round: 5, instruction: 'Defense: Punch, slip, punch.' },
+      { round: 6, instruction: 'Intervals: 10s hard, 10s light.' },
+      { round: 7, instruction: 'Uppercuts: Close range power.' },
+      { round: 8, instruction: 'Burnout: Everything you have left.' },
+    ]
+  },
+  {
+    id: '3',
+    name: 'Monkey Squad Elite',
+    description: 'Advanced Wu-Gong boxing drills for professional fighters.',
+    rounds: 12,
+    fightTime: 180,
+    restTime: 60,
+    category: 'Power',
+    difficulty: 'Pro',
+    completions: 320,
+    rating: 4.9,
+    isPremium: true,
+    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
+    instructions: [
+      { round: 1, instruction: 'Wu-Gong Stance: Perfect balance and weight distribution.' },
+      { round: 2, instruction: 'Monkey Slip: Fluid head movement.' },
+      { round: 3, instruction: 'Explosive Entry: Burst through the guard.' },
+      { round: 4, instruction: 'Pivot Power: Generate force from the ground.' },
+      { round: 5, instruction: 'Triple Threat: Jab, hook, uppercut.' },
+      { round: 6, instruction: 'Active Recovery: Move and breathe.' },
+      { round: 7, instruction: 'Counter Mastery: Bait and punish.' },
+      { round: 8, instruction: 'Pressure: Constant forward motion.' },
+      { round: 9, instruction: 'Angle Attack: Never stay on the line.' },
+      { round: 10, instruction: 'Clinch Work: Control the inside.' },
+      { round: 11, instruction: 'Championship Rounds: Dig deep.' },
+      { round: 12, instruction: 'Final Stand: Leave it all in the ring.' },
+    ]
+  }
+];
 
 interface Config {
   rounds: number;
@@ -39,6 +137,7 @@ export default function App() {
   const [showSubscription, setShowSubscription] = useState(false);
   
   const [config, setConfig] = useState<Config>(DEFAULT_CONFIG);
+  const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [showRating, setShowRating] = useState(false);
   const [rating, setRating] = useState(0);
   
@@ -300,7 +399,10 @@ export default function App() {
                         <h2 className="text-3xl font-display font-black italic mb-2">Ready to Spar?</h2>
                         <p className={`${isDarkMode ? 'text-white/50' : 'text-slate-600'} mb-6 max-w-[200px]`}>Set your rounds and push your limits today.</p>
                         <button 
-                          onClick={() => setCurrentView('setup')}
+                          onClick={() => {
+                            setSelectedWorkout(null);
+                            setCurrentView('setup');
+                          }}
                           className={`px-8 py-4 font-bold rounded-2xl flex items-center gap-2 active:scale-95 transition-all shadow-lg ${
                             isDarkMode ? 'bg-warmup text-white shadow-warmup/20' : 'bg-black text-white shadow-slate-900/10'
                           }`}
@@ -397,6 +499,7 @@ export default function App() {
                           <button 
                             key={i}
                             onClick={() => {
+                              setSelectedWorkout(null);
                               setConfig({ ...config, rounds: p.rounds, fightTime: parseInt(p.time) * 60 });
                               setCurrentView('setup');
                             }}
@@ -451,52 +554,72 @@ export default function App() {
                   >
                     <div className="flex items-center justify-between mb-2">
                       <h2 className="text-3xl font-display font-extrabold italic">Workouts</h2>
-                      <button className="text-warmup text-sm font-bold">See All</button>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold opacity-40 uppercase tracking-widest">School:</span>
+                        <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Monkey Squad</span>
+                      </div>
                     </div>
                     
                     <div className="grid gap-4">
-                      {[
-                        { name: 'Heavy Bag Blast', rounds: 12, time: '3:00', icon: <Dumbbell size={24} className="text-fight-warn" />, rating: 4.8, price: '$250' },
-                        { name: 'Speed Bag Drill', rounds: 6, time: '2:00', icon: <Clock size={24} className="text-warmup" />, rating: 4.5, price: '$180' },
-                        { name: 'Shadow Boxing', rounds: 3, time: '3:00', icon: <User size={24} className="text-rest" />, rating: 4.9, price: '$120' },
-                      ].map((w, i) => (
-                        <div key={i} className={`relative overflow-hidden border rounded-[32px] p-5 flex flex-col gap-4 transition-all cursor-pointer group active:scale-[0.98] ${
-                          isDarkMode ? 'glass-card border-white/5' : 'bg-white border-slate-200 shadow-sm'
-                        }`}>
+                      {WORKOUTS.map((w) => (
+                        <div 
+                          key={w.id} 
+                          onClick={() => {
+                            if (w.isPremium && !isPremium) {
+                              setShowSubscription(true);
+                            } else {
+                              setSelectedWorkout(w);
+                              setCurrentView('workout-detail');
+                            }
+                          }}
+                          className={`relative overflow-hidden border rounded-[32px] p-5 flex flex-col gap-4 transition-all cursor-pointer group active:scale-[0.98] ${
+                            isDarkMode ? 'glass-card border-white/5' : 'bg-white border-slate-200 shadow-sm'
+                          }`}
+                        >
+                          {w.isPremium && !isPremium && (
+                            <div className="absolute top-4 right-4 z-20">
+                              <Crown size={16} className="text-amber-500" fill="currentColor" />
+                            </div>
+                          )}
+                          
                           <div className="flex items-start justify-between">
                             <div className="flex items-center gap-4">
-                              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 ${
+                              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 overflow-hidden ${
                                 isDarkMode ? 'bg-white/5' : 'bg-slate-100'
                               }`}>
-                                {w.icon}
+                                <img src={w.gifUrl} alt={w.name} className="w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity" />
                               </div>
                               <div>
-                                <h3 className="font-bold text-lg leading-tight">{w.name}</h3>
+                                <h3 className="font-bold text-lg leading-tight italic font-display">{w.name}</h3>
                                 <div className="flex items-center gap-1 mt-1">
-                                  <Star size={12} className="text-rest fill-rest" />
+                                  <Star size={12} className="text-amber-500 fill-amber-500" />
                                   <span className="text-xs font-bold opacity-60">{w.rating}</span>
                                   <span className="mx-1 opacity-20">•</span>
                                   <span className="text-xs opacity-40 uppercase tracking-widest font-bold">{w.rounds} Rounds</span>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex flex-col items-end">
-                              <span className="text-warmup font-display font-black text-lg">{w.price}</span>
-                              <span className="text-[10px] opacity-40 uppercase tracking-widest font-bold">Per Session</span>
-                            </div>
                           </div>
                           
                           <div className="flex items-center justify-between pt-2">
-                            <div className="flex gap-2">
-                              <div className={`p-2 rounded-xl ${isDarkMode ? 'bg-white/5' : 'bg-slate-100'}`}>
-                                <Info size={16} className="opacity-40" />
+                            <div className="flex gap-3">
+                              <div className="flex items-center gap-1">
+                                <TrendingUp size={14} className="text-warmup" />
+                                <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">{w.difficulty}</span>
                               </div>
-                              <div className={`p-2 rounded-xl ${isDarkMode ? 'bg-white/5' : 'bg-slate-100'}`}>
-                                <Share2 size={16} className="opacity-40" />
+                              <div className="flex items-center gap-1">
+                                <Zap size={14} className="text-amber-500" />
+                                <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">{w.category}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <User size={14} className="text-blue-400" />
+                                <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">{w.completions.toLocaleString()}</span>
                               </div>
                             </div>
-                            <button className="w-10 h-10 bg-warmup rounded-full flex items-center justify-center shadow-lg shadow-warmup/20 group-hover:scale-110 transition-transform">
-                              <ChevronRight size={20} className="text-white" />
+                            <button className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-transform ${
+                              w.isPremium && !isPremium ? 'bg-white/5' : 'bg-warmup shadow-warmup/20 group-hover:scale-110'
+                            }`}>
+                              {w.isPremium && !isPremium ? <Crown size={18} className="text-amber-500" /> : <ChevronRight size={20} className="text-white" />}
                             </button>
                           </div>
                         </div>
@@ -601,6 +724,110 @@ export default function App() {
           </motion.div>
         )}
 
+        {currentView === 'workout-detail' && selectedWorkout && (
+          <motion.div 
+            key="workout-detail"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            className="flex-1 flex flex-col h-full overflow-hidden"
+          >
+            <header className="p-6 flex items-center gap-4 z-10">
+              <button 
+                onClick={() => setCurrentView('tabs')}
+                className={`p-3 rounded-2xl transition-all active:scale-90 ${
+                  isDarkMode 
+                    ? 'glass-card glass-card-hover' 
+                    : 'bg-white border border-slate-200 shadow-sm hover:bg-slate-50'
+                }`}
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <h2 className="text-2xl font-display font-black italic tracking-tight">Workout Details</h2>
+            </header>
+
+            <div className="flex-1 overflow-y-auto p-6 pb-32 custom-scrollbar">
+              <div className="relative w-full aspect-video rounded-[32px] overflow-hidden mb-8 shadow-2xl">
+                <img src={selectedWorkout.gifUrl} alt={selectedWorkout.name} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-bg via-transparent to-transparent" />
+                <div className="absolute bottom-6 left-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="px-3 py-1 rounded-full bg-warmup text-white text-[10px] font-black uppercase tracking-widest">
+                      {selectedWorkout.category}
+                    </span>
+                    <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest">
+                      {selectedWorkout.difficulty}
+                    </span>
+                  </div>
+                  <h1 className="text-4xl font-display font-black italic tracking-tight">{selectedWorkout.name}</h1>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 mb-8">
+                <div className={`${isDarkMode ? 'glass-card' : 'bg-white border border-slate-200'} rounded-2xl p-4 text-center`}>
+                  <RotateCcw size={18} className="text-warmup mx-auto mb-1" />
+                  <div className="text-lg font-display font-bold">{selectedWorkout.rounds}</div>
+                  <div className="text-[8px] uppercase tracking-widest opacity-40">Rounds</div>
+                </div>
+                <div className={`${isDarkMode ? 'glass-card' : 'bg-white border border-slate-200'} rounded-2xl p-4 text-center`}>
+                  <Clock size={18} className="text-amber-500 mx-auto mb-1" />
+                  <div className="text-lg font-display font-bold">{selectedWorkout.fightTime / 60}m</div>
+                  <div className="text-[8px] uppercase tracking-widest opacity-40">Fight</div>
+                </div>
+                <div className={`${isDarkMode ? 'glass-card' : 'bg-white border border-slate-200'} rounded-2xl p-4 text-center`}>
+                  <History size={18} className="text-emerald-400 mx-auto mb-1" />
+                  <div className="text-lg font-display font-bold">{selectedWorkout.restTime}s</div>
+                  <div className="text-[8px] uppercase tracking-widest opacity-40">Rest</div>
+                </div>
+              </div>
+
+              <div className="mb-8">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] opacity-40 mb-4">Description</h3>
+                <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-white/60' : 'text-slate-600'}`}>
+                  {selectedWorkout.description}
+                </p>
+              </div>
+
+              <div className="mb-8">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] opacity-40 mb-4">Round Instructions</h3>
+                <div className="space-y-3">
+                  {selectedWorkout.instructions.map((inst, i) => (
+                    <div 
+                      key={i}
+                      className={`flex items-start gap-4 p-4 rounded-2xl border ${
+                        isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'
+                      }`}
+                    >
+                      <div className="w-8 h-8 rounded-full bg-warmup/10 text-warmup flex items-center justify-center text-xs font-black shrink-0">
+                        {inst.round}
+                      </div>
+                      <p className="text-sm font-medium opacity-80 pt-1">{inst.instruction}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  setConfig({
+                    rounds: selectedWorkout.rounds,
+                    fightTime: selectedWorkout.fightTime,
+                    restTime: selectedWorkout.restTime,
+                    warmupTime: 10
+                  });
+                  startTraining();
+                }}
+                className={`w-full py-5 font-bold rounded-2xl shadow-xl active:scale-95 transition-transform flex items-center justify-center gap-3 ${
+                  isDarkMode ? 'bg-white text-black shadow-white/5' : 'bg-black text-white shadow-black/10'
+                }`}
+              >
+                <Play size={20} fill="currentColor" />
+                Start Workout
+              </button>
+            </div>
+          </motion.div>
+        )}
+
         {currentView === 'setup' && (
           <motion.div 
             key="setup"
@@ -684,7 +911,10 @@ export default function App() {
               </div>
 
               <button
-                onClick={startTraining}
+                onClick={() => {
+                  setSelectedWorkout(null);
+                  startTraining();
+                }}
                 className={`w-full py-5 font-bold rounded-2xl shadow-xl active:scale-95 transition-transform flex items-center justify-center gap-3 ${isDarkMode ? 'bg-white text-black shadow-white/5' : 'bg-black text-white shadow-black/10'}`}
               >
                 <Play size={20} fill="currentColor" />
@@ -718,7 +948,9 @@ export default function App() {
                 <ChevronLeft size={24} />
               </button>
               <div className="flex flex-col items-center">
-                <span className="text-[10px] font-mono uppercase tracking-[0.2em] opacity-50">Session Active</span>
+                <span className="text-[10px] font-mono uppercase tracking-[0.2em] opacity-50">
+                  {selectedWorkout ? selectedWorkout.name : 'Session Active'}
+                </span>
                 <h1 className="font-display text-xl font-extrabold italic tracking-tight">SparTime</h1>
               </div>
               <button 
@@ -843,7 +1075,7 @@ export default function App() {
               </div>
 
             {/* Round Counter */}
-            <div className="z-10 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl px-8 py-4 mb-12 flex flex-col items-center">
+            <div className="z-10 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl px-8 py-4 mb-8 flex flex-col items-center">
               <span className="text-[10px] uppercase tracking-widest opacity-50 mb-1">Round</span>
               <div className="flex items-baseline gap-1">
                 <span className="text-3xl font-display font-bold text-warmup">{currentRound}</span>
@@ -851,6 +1083,45 @@ export default function App() {
                 <span className="text-xl opacity-30">{config.rounds}</span>
               </div>
             </div>
+
+            {/* Workout Info */}
+            {selectedWorkout && (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="w-full max-w-md mb-8 z-10"
+              >
+                <div className={`p-5 rounded-[32px] border ${isDarkMode ? 'glass-card border-white/10' : 'bg-white border-slate-200 shadow-sm'}`}>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-white/10">
+                      <img src={selectedWorkout.gifUrl} alt={selectedWorkout.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-black uppercase tracking-widest text-warmup mb-0.5">
+                        {timerState === 'REST' ? 'Next Round Focus' : 'Current Focus'}
+                      </div>
+                      <h3 className="font-bold text-sm italic font-display opacity-80">Round {timerState === 'REST' ? currentRound + 1 : currentRound}</h3>
+                    </div>
+                  </div>
+                  
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={currentRound + timerState}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className={`p-4 rounded-2xl ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}`}
+                    >
+                      <p className="text-sm font-medium leading-relaxed italic">
+                        "{timerState === 'REST' 
+                          ? selectedWorkout.instructions.find(i => i.round === currentRound + 1)?.instruction || 'Get ready for the next round!'
+                          : selectedWorkout.instructions.find(i => i.round === currentRound)?.instruction || 'Keep pushing!'}"
+                      </p>
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+            )}
 
             {/* Controls */}
             <div className="w-full max-w-md grid grid-cols-2 gap-4 z-10 mb-6">
