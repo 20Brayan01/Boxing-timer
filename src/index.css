@@ -24,12 +24,12 @@
   body.light-mode {
     --color-bg: #f9fafb;
     --color-surface: #ffffff;
-    --color-border: rgba(0, 0, 0, 0.05);
-    --color-warmup: #3b82f6;
-    --color-fight: #10b981;
-    --color-fight-warn: #ef4444;
-    --color-rest: #f59e0b;
-    @apply text-slate-900;
+    --color-border: rgba(0, 0, 0, 0.08);
+    --color-warmup: #2563eb;
+    --color-fight: #16a34a;
+    --color-fight-warn: #dc2626;
+    --color-rest: #ca8a04;
+    @apply text-black;
   }
 
   body.light-mode .bg-bg {
@@ -38,46 +38,46 @@
 
   body.light-mode .bg-white\/5 {
     background-color: #ffffff;
-    @apply border border-slate-100 shadow-sm;
+    @apply border border-slate-200 shadow-sm;
   }
 
   body.light-mode .bg-white\/10 {
     background-color: #ffffff;
-    @apply border border-slate-200 shadow-md;
+    @apply border border-slate-300 shadow-md;
   }
 
   body.light-mode .border-white\/5,
   body.light-mode .border-white\/10 {
-    border-color: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.1);
   }
 
   body.light-mode .text-white\/40,
   body.light-mode .text-white\/30 {
-    @apply text-slate-400 font-medium;
+    @apply text-slate-600 font-medium;
   }
 
   body.light-mode .text-white\/60,
   body.light-mode .text-white\/50 {
-    @apply text-slate-500 font-medium;
+    @apply text-slate-700 font-semibold;
   }
 
   body.light-mode .text-white {
-    @apply text-slate-900 font-semibold;
+    @apply text-black font-bold;
   }
 
   body.light-mode .bg-zinc-900,
   body.light-mode .bg-zinc-900\/80 {
-    background-color: rgba(255, 255, 255, 0.95);
-    @apply backdrop-blur-xl border-t border-slate-100;
+    background-color: rgba(255, 255, 255, 0.98);
+    @apply backdrop-blur-xl border-t border-slate-200;
   }
 
   body.light-mode .bg-zinc-900 {
     background-color: #ffffff;
-    @apply border border-slate-100 shadow-sm;
+    @apply border border-slate-200 shadow-sm;
   }
 
   body.light-mode .text-zinc-900 {
-    @apply text-slate-900;
+    @apply text-black;
   }
 
   body.light-mode .shadow-white\/5 {
