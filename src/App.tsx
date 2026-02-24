@@ -302,6 +302,18 @@ export default function App() {
   const [showWorkoutOverlay, setShowWorkoutOverlay] = useState(false);
   const [rating, setRating] = useState(0);
   
+  // Auth State
+  const [user, setUser] = useState<any>(null);
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authError, setAuthError] = useState('');
+
+  // Payment Result State
+  const [paymentResult, setPaymentResult] = useState<'success' | 'failure' | null>(null);
+  const [subscriptionWarning, setSubscriptionWarning] = useState<string | null>(null);
+  
   // Timer State
   const [timerState, setTimerState] = useState<TimerState>('IDLE');
   const [currentRound, setCurrentRound] = useState(1);
@@ -319,25 +331,136 @@ export default function App() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
-    }, 2000);
+    }, 3000);
 
     // Check for successful payment in URL
     const params = new URLSearchParams(window.location.search);
-    if (params.get('payment') === 'success') {
-      setIsPremium(true);
-      // Optional: clear the URL params
+    const sessionId = params.get('session_id');
+    const paymentStatus = params.get('payment');
+
+    if (paymentStatus === 'success' && sessionId && token) {
+      verifySubscription(sessionId);
+    } else if (paymentStatus === 'cancel') {
+      setPaymentResult('failure');
       window.history.replaceState({}, document.title, window.location.pathname);
     }
 
+    if (token) {
+      fetchUser();
+    }
+
     return () => clearTimeout(timer);
-  }, []);
+  }, [token]);
+
+  const fetchUser = async () => {
+    try {
+      const res = await fetch('/api/auth/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const userData = await res.json();
+        setUser(userData);
+        checkSubscriptionWarning(userData.subscription_end_date);
+        if (userData.subscription_end_date) {
+          const isExpired = new Date(userData.subscription_end_date) < new Date();
+          setIsPremium(!isExpired);
+        }
+      } else {
+        handleLogout();
+      }
+    } catch (err) {
+      console.error('Fetch user error:', err);
+    }
+  };
+
+  const verifySubscription = async (sessionId: string) => {
+    try {
+      const res = await fetch('/api/subscription/verify', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ sessionId })
+      });
+      if (res.ok) {
+        setPaymentResult('success');
+        fetchUser();
+      } else {
+        setPaymentResult('failure');
+      }
+    } catch (err) {
+      setPaymentResult('failure');
+    } finally {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  };
+
+  const checkSubscriptionWarning = (endDateStr: string | null) => {
+    if (!endDateStr) return;
+    const endDate = new Date(endDateStr);
+    const now = new Date();
+    const diffTime = endDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays > 0 && diffDays <= 7) {
+      setSubscriptionWarning(`Your subscription expires in ${diffDays} days. Don't forget to renew!`);
+    } else if (diffDays <= 0) {
+      setSubscriptionWarning('Your subscription has expired. Renew now to keep Elite access!');
+    } else {
+      setSubscriptionWarning(null);
+    }
+  };
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/signup';
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: authEmail, password: authPassword })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (authMode === 'login') {
+          localStorage.setItem('token', data.token);
+          setToken(data.token);
+          setUser(data.user);
+        } else {
+          setAuthMode('login');
+          setAuthError('Account created! Please login.');
+        }
+      } else {
+        setAuthError(data.error);
+      }
+    } catch (err) {
+      setAuthError('Authentication failed');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setToken(null);
+    setUser(null);
+    setIsPremium(false);
+  };
 
   const handleCheckout = async (plan: any) => {
+    if (!token) {
+      setActiveTab('profile');
+      setShowSubscription(false);
+      return;
+    }
     setIsProcessingPayment(true);
     try {
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           planName: plan.name,
           price: plan.price,
@@ -498,30 +621,88 @@ export default function App() {
   if (showSplash) {
     return (
       <motion.div 
-        className="fixed inset-0 z-[100] bg-bg flex flex-col items-center justify-center p-8 text-center"
+        className="fixed inset-0 z-[200] bg-bg flex flex-col items-center justify-center p-8 text-center overflow-hidden"
         initial={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        exit={{ opacity: 0, scale: 1.1, filter: 'blur(20px)' }}
+        transition={{ duration: 1.2, ease: [0.43, 0.13, 0.23, 0.96] }}
       >
+        <div className="absolute inset-0 overflow-hidden">
+          <motion.div 
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-warmup/10 rounded-full blur-[160px]"
+            animate={{ 
+              scale: [1, 1.2, 1],
+              opacity: [0.1, 0.2, 0.1],
+            }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div 
+            className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-fight/5 rounded-full blur-[120px]"
+            animate={{ 
+              x: [0, 50, 0],
+              y: [0, 30, 0],
+            }}
+            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </div>
+
         <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="mb-12"
+          initial={{ scale: 0.5, opacity: 0, rotate: -10 }}
+          animate={{ scale: 1, opacity: 1, rotate: 0 }}
+          transition={{ duration: 1, ease: "backOut" }}
+          className="relative z-10 mb-12"
         >
-          <div className="w-32 h-32 bg-fight-warn rounded-[32px] flex items-center justify-center mb-6 shadow-2xl shadow-fight-warn/20 rotate-12">
-            <Dumbbell size={64} className="text-white -rotate-12" />
+          <div className="relative">
+            <motion.div 
+              className="w-32 h-32 bg-warmup rounded-[40px] flex items-center justify-center mb-8 shadow-2xl shadow-warmup/40 rotate-12 mx-auto relative z-20"
+              animate={{ rotate: [12, 8, 12] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <Dumbbell size={64} className="text-white -rotate-12" />
+            </motion.div>
+            <motion.div 
+              className="absolute inset-0 bg-warmup/20 rounded-[40px] blur-2xl -z-10"
+              animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            />
           </div>
-          <h1 className="font-display text-5xl font-extrabold italic tracking-tighter mb-2">SparTime</h1>
-          <p className="text-white/40 font-medium tracking-wide">TRAIN LIKE A PRO</p>
+          
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.5, duration: 0.8 }}
+          >
+            <h1 className="font-display text-7xl font-black italic tracking-tighter mb-2 bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent">
+              MONKEY SQUAD
+            </h1>
+            <div className="flex items-center justify-center gap-3">
+              <motion.div initial={{ width: 0 }} animate={{ width: 32 }} transition={{ delay: 1, duration: 0.5 }} className="h-[1px] bg-warmup/40" />
+              <span className="text-[10px] font-black uppercase tracking-[0.5em] text-white/40">Wu-Gong Boxing School</span>
+              <motion.div initial={{ width: 0 }} animate={{ width: 32 }} transition={{ delay: 1, duration: 0.5 }} className="h-[1px] bg-warmup/40" />
+            </div>
+          </motion.div>
         </motion.div>
         
-        <div className="w-48 h-1 bg-white/10 rounded-full overflow-hidden">
-          <motion.div 
-            className="h-full bg-fight-warn"
-            initial={{ width: 0 }}
-            animate={{ width: "100%" }}
-            transition={{ duration: 3, ease: "linear" }}
-          />
+        <div className="absolute bottom-20 left-0 right-0 flex flex-col items-center">
+          <div className="w-64 h-1.5 bg-white/5 rounded-full overflow-hidden mb-6 relative">
+            <motion.div 
+              className="h-full bg-gradient-to-r from-warmup to-fight"
+              initial={{ width: 0 }}
+              animate={{ width: "100%" }}
+              transition={{ duration: 3, ease: "easeInOut" }}
+            />
+            <motion.div 
+              className="absolute top-0 left-0 h-full w-20 bg-white/40 blur-md"
+              animate={{ x: [-100, 300] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+            />
+          </div>
+          <motion.span 
+            animate={{ opacity: [0.3, 0.6, 0.3] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40"
+          >
+            Mastering the Art of Boxing
+          </motion.span>
         </div>
       </motion.div>
     );
@@ -536,6 +717,125 @@ export default function App() {
           background: `radial-gradient(circle at 50% 50%, ${currentView === 'timer' ? getThemeColor() : 'var(--color-warmup)'} 0%, transparent 70%)` 
         }}
       />
+
+      {/* Subscription Warning Banner */}
+      <AnimatePresence>
+        {subscriptionWarning && (
+          <motion.div
+            initial={{ y: -100 }}
+            animate={{ y: 0 }}
+            exit={{ y: -100 }}
+            className="fixed top-0 left-0 right-0 z-[100] bg-amber-500 text-black py-3 px-6 flex items-center justify-between shadow-lg"
+          >
+            <div className="flex items-center gap-3">
+              <Crown size={18} fill="currentColor" />
+              <span className="text-xs font-bold uppercase tracking-wide">{subscriptionWarning}</span>
+            </div>
+            <button onClick={() => setSubscriptionWarning(null)} className="p-1">
+              <X size={16} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Payment Result Overlays */}
+      <AnimatePresence>
+        {paymentResult && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-black/95 backdrop-blur-2xl"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0, y: 40, rotate: -5 }}
+              animate={{ scale: 1, opacity: 1, y: 0, rotate: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: 40 }}
+              transition={{ type: "spring", damping: 20, stiffness: 100 }}
+              className={`w-full max-w-sm p-10 rounded-[48px] text-center border relative overflow-hidden ${
+                paymentResult === 'success' ? 'border-emerald-500/30 shadow-emerald-500/20' : 'border-red-500/30 shadow-red-500/20'
+              } ${isDarkMode ? 'bg-bg' : 'bg-white'} shadow-2xl`}
+            >
+              {/* Background Glow */}
+              <div className={`absolute -top-24 -left-24 w-48 h-48 rounded-full blur-[80px] opacity-20 ${
+                paymentResult === 'success' ? 'bg-emerald-500' : 'bg-red-500'
+              }`} />
+              
+              <motion.div 
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.3, type: "spring", damping: 12 }}
+                className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8 relative z-10 ${
+                  paymentResult === 'success' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40' : 'bg-red-500 text-white shadow-lg shadow-red-500/40'
+                }`}
+              >
+                {paymentResult === 'success' ? <CheckCircle2 size={48} /> : <X size={48} />}
+              </motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="relative z-10"
+              >
+                <h2 className="text-4xl font-display font-black italic mb-4 tracking-tight uppercase">
+                  {paymentResult === 'success' ? 'Elite Unlocked' : 'Access Denied'}
+                </h2>
+                
+                <p className={`mb-10 leading-relaxed font-medium ${isDarkMode ? 'text-white/60' : 'text-slate-500'}`}>
+                  {paymentResult === 'success' 
+                    ? 'Your Monkey Squad Elite membership is now active. The school of champions awaits you.' 
+                    : 'Something went wrong with your transaction. The monkey squad requires a valid tribute.'}
+                </p>
+                
+                <button
+                  onClick={() => setPaymentResult(null)}
+                  className={`w-full py-5 font-black uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-xl ${
+                    paymentResult === 'success' 
+                      ? 'bg-emerald-500 text-white shadow-emerald-500/30' 
+                      : 'bg-red-500 text-white shadow-red-500/30'
+                  }`}
+                >
+                  {paymentResult === 'success' ? 'Enter the Dojo' : 'Try Again'}
+                </button>
+              </motion.div>
+
+              {/* Decorative Elements */}
+              {paymentResult === 'success' && (
+                <motion.div 
+                  className="absolute top-0 left-0 w-full h-full pointer-events-none"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="absolute w-1 h-1 bg-emerald-400 rounded-full"
+                      initial={{ 
+                        x: "50%", 
+                        y: "50%",
+                        scale: 0 
+                      }}
+                      animate={{ 
+                        x: `${50 + (Math.random() - 0.5) * 100}%`,
+                        y: `${50 + (Math.random() - 0.5) * 100}%`,
+                        scale: [0, 1, 0],
+                        opacity: [0, 1, 0]
+                      }}
+                      transition={{ 
+                        duration: 1.5, 
+                        repeat: Infinity, 
+                        delay: Math.random() * 2,
+                        ease: "easeOut"
+                      }}
+                    />
+                  ))}
+                </motion.div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {currentView === 'tabs' && (
@@ -904,86 +1204,187 @@ export default function App() {
                   >
                     <h2 className="text-3xl font-display font-extrabold italic mb-8">Profile</h2>
                     
-                    <div className="flex items-center gap-6 mb-10">
-                      <div className="w-20 h-20 bg-gradient-to-br from-fight-warn to-warmup rounded-3xl flex items-center justify-center text-3xl font-display font-black italic">
-                        JD
-                      </div>
-                      <div>
-                        <h3 className="text-2xl font-bold">John Doe</h3>
-                        <p className="text-white/40">Amateur Lightweight</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 mb-10">
-                      <div className={`${isDarkMode ? 'glass-card' : 'bg-white/5 border border-white/10'} rounded-2xl p-5`}>
-                        <Award className="text-yellow-500 mb-2" />
-                        <div className="text-2xl font-display font-bold">42</div>
-                        <div className="text-white/40 text-xs uppercase tracking-widest">Workouts</div>
-                      </div>
-                      <div className={`${isDarkMode ? 'glass-card' : 'bg-white/5 border border-white/10'} rounded-2xl p-5`}>
-                        <History className="text-warmup mb-2" />
-                        <div className="text-2xl font-display font-bold">12.5h</div>
-                        <div className="text-white/40 text-xs uppercase tracking-widest">Total Time</div>
-                      </div>
-                    </div>
-
-                    {!isPremium && (
-                      <div 
-                        onClick={() => setShowSubscription(true)}
-                        className={`mb-8 p-6 rounded-[32px] border cursor-pointer relative overflow-hidden group transition-all ${
-                          isDarkMode ? 'glass-card border-amber-500/30' : 'bg-amber-50 border-amber-200'
-                        }`}
-                      >
-                        <div className="relative z-10">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Crown size={16} className="text-amber-500" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Go Elite</span>
+                    {!user ? (
+                      <div className={`p-8 rounded-[40px] border ${isDarkMode ? 'glass-card border-white/10' : 'bg-white border-slate-200 shadow-sm'}`}>
+                        <div className="text-center mb-8">
+                          <div className="w-20 h-20 bg-warmup/10 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                            <User size={40} className="text-warmup" />
                           </div>
-                          <h3 className="text-lg font-display font-black italic mb-1">Monkey Squad Membership</h3>
-                          <p className="text-xs opacity-50 mb-4">Join the school of champions.</p>
-                          <button className="text-xs font-bold text-amber-500 flex items-center gap-1">
-                            View Plans <ChevronRight size={14} />
+                          <h3 className="text-2xl font-display font-black italic mb-1">
+                            {authMode === 'login' ? 'Welcome Back' : 'Join the Squad'}
+                          </h3>
+                          <p className="text-xs opacity-40 uppercase tracking-widest font-bold">
+                            {authMode === 'login' ? 'Login to your account' : 'Create your training profile'}
+                          </p>
+                        </div>
+
+                        <form onSubmit={handleAuth} className="space-y-4">
+                          <div>
+                            <label className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-2 block">Email Address</label>
+                            <input 
+                              type="email" 
+                              required
+                              value={authEmail}
+                              onChange={(e) => setAuthEmail(e.target.value)}
+                              className={`w-full p-4 rounded-2xl border bg-transparent focus:outline-none focus:ring-2 ring-warmup/50 transition-all ${
+                                isDarkMode ? 'border-white/10' : 'border-slate-200'
+                              }`}
+                              placeholder="fighter@monkeysquad.com"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-2 block">Password</label>
+                            <input 
+                              type="password" 
+                              required
+                              value={authPassword}
+                              onChange={(e) => setAuthPassword(e.target.value)}
+                              className={`w-full p-4 rounded-2xl border bg-transparent focus:outline-none focus:ring-2 ring-warmup/50 transition-all ${
+                                isDarkMode ? 'border-white/10' : 'border-slate-200'
+                              }`}
+                              placeholder="••••••••"
+                            />
+                          </div>
+
+                          {authError && (
+                            <p className="text-xs text-red-500 font-bold text-center">{authError}</p>
+                          )}
+
+                          <button 
+                            type="submit"
+                            className="w-full py-5 bg-warmup text-white font-bold rounded-2xl shadow-xl shadow-warmup/20 active:scale-95 transition-transform"
+                          >
+                            {authMode === 'login' ? 'Login' : 'Sign Up'}
+                          </button>
+                        </form>
+
+                        <div className="mt-8 text-center">
+                          <button 
+                            onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+                            className="text-xs font-bold opacity-40 hover:opacity-100 transition-opacity"
+                          >
+                            {authMode === 'login' ? "Don't have an account? Sign Up" : "Already have an account? Login"}
                           </button>
                         </div>
-                        <Sparkles size={60} className="absolute -right-4 -bottom-4 text-amber-500/10 group-hover:scale-125 transition-transform" />
                       </div>
-                    )}
-
-                    <div className="space-y-2">
-                      <div className={`w-full flex items-center justify-between p-4 rounded-2xl border ${isDarkMode ? 'glass-card' : 'bg-white/5 border-white/5'}`}>
-                        <span className="flex items-center gap-3 font-medium text-sm opacity-80">
-                          <Zap size={18} className="text-warmup" /> Appearance
-                        </span>
-                        <button 
-                          onClick={() => setIsDarkMode(!isDarkMode)}
-                          className={`relative w-20 h-10 rounded-full p-1.5 transition-all duration-300 ${isDarkMode ? 'bg-warmup/30' : 'bg-sky-400'}`}
-                        >
-                          <motion.div 
-                            className="w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-md z-10 relative"
-                            animate={{ x: isDarkMode ? 40 : 0 }}
-                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                          >
-                            {isDarkMode ? (
-                              <motion.div initial={{ rotate: -90 }} animate={{ rotate: 0 }}><Moon size={16} className="text-warmup fill-warmup" /></motion.div>
-                            ) : (
-                              <motion.div initial={{ rotate: 90 }} animate={{ rotate: 0 }}><Sun size={16} className="text-sky-500 fill-sky-500" /></motion.div>
-                            )}
-                          </motion.div>
-                          <div className="absolute inset-0 flex items-center justify-between px-3.5">
-                            <Moon size={14} className={`text-white transition-opacity duration-300 ${isDarkMode ? 'opacity-100' : 'opacity-0'}`} />
-                            <Sun size={14} className={`text-white transition-opacity duration-300 ${isDarkMode ? 'opacity-0' : 'opacity-100'}`} />
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-6 mb-10">
+                          <div className="w-20 h-20 bg-gradient-to-br from-fight-warn to-warmup rounded-3xl flex items-center justify-center text-3xl font-display font-black italic">
+                            {user.email.substring(0, 2).toUpperCase()}
                           </div>
-                        </button>
-                      </div>
-                      <button className={`w-full flex items-center justify-between p-4 rounded-xl transition-colors ${isDarkMode ? 'glass-card glass-card-hover' : 'bg-white/5 hover:bg-white/10'}`}>
-                        <span className="flex items-center gap-3"><Settings size={18} /> Settings</span>
-                        <ChevronUp className="rotate-90 opacity-20" size={18} />
-                      </button>
-                      <button className={`w-full flex items-center justify-between p-4 rounded-xl transition-colors ${isDarkMode ? 'glass-card glass-card-hover' : 'bg-white/5 hover:bg-white/10'}`}>
-                        <span className="flex items-center gap-3"><Info size={18} /> Help & Support</span>
-                        <ChevronUp className="rotate-90 opacity-20" size={18} />
-                      </button>
-                    </div>
+                          <div>
+                            <h3 className="text-2xl font-bold truncate max-w-[200px]">{user.email.split('@')[0]}</h3>
+                            <p className="text-white/40">{isPremium ? 'Elite Member' : 'Free Member'}</p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 mb-10">
+                          <div className={`${isDarkMode ? 'glass-card' : 'bg-white/5 border border-white/10'} rounded-2xl p-5`}>
+                            <Award className="text-yellow-500 mb-2" />
+                            <div className="text-2xl font-display font-bold">42</div>
+                            <div className="text-white/40 text-xs uppercase tracking-widest">Workouts</div>
+                          </div>
+                          <div className={`${isDarkMode ? 'glass-card' : 'bg-white/5 border border-white/10'} rounded-2xl p-5`}>
+                            <History className="text-warmup mb-2" />
+                            <div className="text-2xl font-display font-bold">12.5h</div>
+                            <div className="text-white/40 text-xs uppercase tracking-widest">Total Time</div>
+                          </div>
+                        </div>
+
+                        {isPremium && user.subscription_end_date && (
+                          <div className={`mb-8 p-6 rounded-[32px] border ${isDarkMode ? 'glass-card border-emerald-500/30' : 'bg-emerald-50 border-emerald-200'}`}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <ShieldCheck size={16} className="text-emerald-500" />
+                              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Elite Active</span>
+                            </div>
+                            <h3 className="text-lg font-display font-black italic mb-1">Subscription Details</h3>
+                            <p className="text-xs opacity-50">Expires on: {new Date(user.subscription_end_date).toLocaleDateString()}</p>
+                          </div>
+                        )}
+
+                        {!isPremium && (
+                          <div 
+                            onClick={() => setShowSubscription(true)}
+                            className={`mb-8 p-6 rounded-[32px] border cursor-pointer relative overflow-hidden group transition-all ${
+                              isDarkMode ? 'glass-card border-amber-500/30' : 'bg-amber-50 border-amber-200'
+                            }`}
+                          >
+                            <div className="relative z-10">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Crown size={16} className="text-amber-500" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Go Elite</span>
+                              </div>
+                              <h3 className="text-lg font-display font-black italic mb-1">Monkey Squad Membership</h3>
+                              <p className="text-xs opacity-50 mb-4">Join the school of champions.</p>
+                              <button className="text-xs font-bold text-amber-500 flex items-center gap-1">
+                                View Plans <ChevronRight size={14} />
+                              </button>
+                            </div>
+                            <Sparkles size={60} className="absolute -right-4 -bottom-4 text-amber-500/10 group-hover:scale-125 transition-transform" />
+                          </div>
+                        )}
+
+                        <div className="space-y-4">
+                          <div className={`w-full flex items-center justify-between p-4 rounded-2xl border ${isDarkMode ? 'glass-card' : 'bg-white/5 border-white/5'}`}>
+                            <span className="flex items-center gap-3 font-medium text-sm opacity-80">
+                              <Moon size={18} className="text-warmup" /> Dark Mode
+                            </span>
+                            <button 
+                              onClick={() => setIsDarkMode(!isDarkMode)}
+                              className={`relative w-14 h-8 rounded-full p-1 transition-all duration-300 ${isDarkMode ? 'bg-warmup' : 'bg-slate-200'}`}
+                            >
+                              <motion.div 
+                                className="w-6 h-6 bg-white rounded-full shadow-md"
+                                animate={{ x: isDarkMode ? 24 : 0 }}
+                                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                              />
+                            </button>
+                          </div>
+
+                          <div className={`p-6 rounded-[32px] border ${isDarkMode ? 'glass-card border-white/5' : 'bg-white border-slate-200 shadow-sm'}`}>
+                            <h4 className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-4">Training History</h4>
+                            <div className="space-y-4">
+                              {[
+                                { date: 'Today', workout: 'The 12 Jabs', time: '18m', xp: '+120 XP' },
+                                { date: 'Yesterday', workout: 'Heavy Bag Blast', time: '24m', xp: '+240 XP' },
+                                { date: 'Oct 24', workout: 'Monkey Squad Elite', time: '45m', xp: '+500 XP' },
+                              ].map((item, i) => (
+                                <div key={i} className="flex items-center justify-between group cursor-pointer">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-xs font-bold opacity-40 group-hover:opacity-100 transition-opacity">
+                                      {item.date.substring(0, 3)}
+                                    </div>
+                                    <div>
+                                      <div className="text-sm font-bold">{item.workout}</div>
+                                      <div className="text-[10px] opacity-40 uppercase tracking-widest font-bold">{item.time} • {item.xp}</div>
+                                    </div>
+                                  </div>
+                                  <ChevronRight size={16} className="opacity-20 group-hover:opacity-100 transition-opacity" />
+                                </div>
+                              ))}
+                            </div>
+                            <button className="w-full mt-6 py-3 text-[10px] font-black uppercase tracking-widest opacity-30 hover:opacity-100 transition-opacity">
+                              View All Activity
+                            </button>
+                          </div>
+
+                          <button 
+                            onClick={handleLogout}
+                            className={`w-full flex items-center justify-between p-5 rounded-2xl transition-all active:scale-[0.98] ${
+                              isDarkMode 
+                                ? 'bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20' 
+                                : 'bg-red-50 text-red-500 border border-red-100 hover:bg-red-100'
+                            }`}
+                          >
+                            <span className="flex items-center gap-3 font-bold text-sm">
+                              <RotateCcw size={18} /> Sign Out
+                            </span>
+                            <ChevronRight size={18} className="opacity-40" />
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1441,32 +1842,32 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-black/95 backdrop-blur-xl"
+            className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6 bg-black/95 backdrop-blur-2xl"
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              initial={{ scale: 0.9, opacity: 0, y: 40 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className={`w-full max-w-md border rounded-[40px] overflow-hidden shadow-2xl ${
+              exit={{ scale: 0.9, opacity: 0, y: 40 }}
+              className={`w-full max-w-md h-[85vh] flex flex-col border rounded-[40px] overflow-hidden shadow-2xl ${
                 isDarkMode ? 'glass-card border-white/10' : 'bg-white border-slate-200'
               }`}
             >
-              <div className="relative aspect-video w-full overflow-hidden">
+              <div className="relative aspect-video w-full overflow-hidden shrink-0">
                 <img src={selectedWorkout.gifUrl} alt={selectedWorkout.name} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
                 <button 
                   onClick={() => setShowWorkoutOverlay(false)}
-                  className="absolute top-4 right-4 p-2 rounded-full bg-black/50 text-white backdrop-blur-md hover:bg-black/70 transition-colors"
+                  className="absolute top-4 right-4 p-2 rounded-full bg-black/50 text-white backdrop-blur-md hover:bg-black/70 transition-colors z-20"
                 >
                   <X size={20} />
                 </button>
-                <div className="absolute bottom-4 left-6">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-warmup mb-1 block">Tutorial Mode</span>
+                <div className="absolute bottom-4 left-6 z-10">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-warmup mb-1 block">Training Manual</span>
                   <h2 className="text-2xl font-display font-black italic tracking-tight">{selectedWorkout.name}</h2>
                 </div>
               </div>
               
-              <div className="p-8">
+              <div className="flex-1 overflow-y-auto p-6 sm:p-8 custom-scrollbar">
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-12 h-12 rounded-2xl bg-warmup/10 text-warmup flex items-center justify-center text-xl font-display font-black italic">
                     {timerState === 'REST' ? currentRound + 1 : currentRound}
@@ -1479,19 +1880,50 @@ export default function App() {
                   </div>
                 </div>
                 
-                <div className={`p-6 rounded-3xl ${isDarkMode ? 'bg-white/5 border border-white/5' : 'bg-slate-50 border-slate-100'}`}>
+                <div className={`p-6 rounded-3xl mb-8 ${isDarkMode ? 'bg-white/5 border border-white/5' : 'bg-slate-50 border-slate-100'}`}>
                   <p className="text-lg font-medium leading-relaxed italic text-center">
                     "{timerState === 'REST' 
                       ? selectedWorkout.instructions.find(i => i.round === currentRound + 1)?.instruction || 'Get ready for the next round!'
                       : selectedWorkout.instructions.find(i => i.round === currentRound)?.instruction || 'Keep pushing!'}"
                   </p>
                 </div>
-                
+
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-3">Workout Strategy</h4>
+                    <p className="text-sm opacity-70 leading-relaxed">{selectedWorkout.description}</p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-3">Full Plan</h4>
+                    <div className="space-y-2">
+                      {selectedWorkout.instructions.map((inst, idx) => (
+                        <div 
+                          key={idx}
+                          className={`flex items-center gap-3 p-3 rounded-xl border ${
+                            inst.round === (timerState === 'REST' ? currentRound + 1 : currentRound)
+                              ? 'bg-warmup/10 border-warmup/30'
+                              : 'bg-white/5 border-transparent opacity-40'
+                          }`}
+                        >
+                          <span className="text-[10px] font-black w-4">{inst.round}</span>
+                          <span className="text-xs font-medium truncate">{inst.instruction}</span>
+                          {inst.round === (timerState === 'REST' ? currentRound + 1 : currentRound) && (
+                            <div className="ml-auto w-1.5 h-1.5 rounded-full bg-warmup animate-pulse" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 sm:p-8 pt-0 shrink-0">
                 <button
                   onClick={() => setShowWorkoutOverlay(false)}
-                  className="w-full mt-8 py-5 bg-warmup text-white font-bold rounded-2xl shadow-xl shadow-warmup/20 active:scale-95 transition-transform"
+                  className="w-full py-5 bg-warmup text-white font-bold rounded-2xl shadow-xl shadow-warmup/20 active:scale-95 transition-transform"
                 >
-                  Back to Timer
+                  Return to Training
                 </button>
               </div>
             </motion.div>

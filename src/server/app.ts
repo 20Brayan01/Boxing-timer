@@ -1,10 +1,13 @@
 import express from 'express';
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
+import db from './db';
+import crypto from 'crypto';
 
 dotenv.config();
 
 const app = express();
+app.use(express.json());
 
 // Stripe initialization
 let stripe: Stripe | null = null;
@@ -24,10 +27,52 @@ const getStripe = () => {
   return stripe;
 };
 
-app.use(express.json());
+// Auth Middleware
+const authenticate = (req: any, res: any, next: any) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+  const session = db.prepare('SELECT user_id FROM sessions WHERE id = ? AND expires_at > datetime("now")').get(token) as any;
+  if (!session) return res.status(401).json({ error: 'Session expired or invalid' });
+
+  req.userId = session.user_id;
+  next();
+};
 
 // API Routes
-app.post('/api/create-checkout-session', async (req, res) => {
+
+// Auth
+app.post('/api/auth/signup', (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const result = db.prepare('INSERT INTO users (email, password) VALUES (?, ?)').run(email, password);
+    res.json({ success: true, userId: result.lastInsertRowid });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message.includes('UNIQUE') ? 'Email already exists' : error.message });
+  }
+});
+
+app.post('/api/auth/login', (req, res) => {
+  const { email, password } = req.body;
+  const user = db.prepare('SELECT id, email FROM users WHERE email = ? AND password = ?').get(email, password) as any;
+  
+  if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 days
+  
+  db.prepare('INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)').run(token, user.id, expiresAt);
+  
+  res.json({ token, user });
+});
+
+app.get('/api/auth/me', authenticate, (req: any, res) => {
+  const user = db.prepare('SELECT id, email, subscription_end_date FROM users WHERE id = ?').get(req.userId) as any;
+  res.json(user);
+});
+
+// Stripe
+app.post('/api/create-checkout-session', authenticate, async (req: any, res) => {
   const { planName, price, duration } = req.body;
   const stripeClient = getStripe();
 
@@ -36,11 +81,11 @@ app.post('/api/create-checkout-session', async (req, res) => {
   }
 
   try {
-    // Use the request origin to construct redirect URLs for multi-environment support (Local, AI Studio, Netlify)
     const origin = req.headers.origin || process.env.APP_URL || 'http://localhost:3000';
     
     const session = await stripeClient.checkout.sessions.create({
       payment_method_types: ['card'],
+      customer_email: (db.prepare('SELECT email FROM users WHERE id = ?').get(req.userId) as any).email,
       line_items: [
         {
           price_data: {
@@ -55,6 +100,10 @@ app.post('/api/create-checkout-session', async (req, res) => {
         },
       ],
       mode: 'payment',
+      metadata: {
+        userId: req.userId.toString(),
+        duration: duration
+      },
       success_url: `${origin}?session_id={CHECKOUT_SESSION_ID}&payment=success`,
       cancel_url: `${origin}?payment=cancel`,
     });
@@ -62,6 +111,35 @@ app.post('/api/create-checkout-session', async (req, res) => {
     res.json({ url: session.url });
   } catch (error: any) {
     console.error('Stripe error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/subscription/verify', authenticate, async (req: any, res) => {
+  const { sessionId } = req.body;
+  const stripeClient = getStripe();
+  if (!stripeClient) return res.status(500).json({ error: 'Stripe not configured' });
+
+  try {
+    const session = await stripeClient.checkout.sessions.retrieve(sessionId);
+    if (session.payment_status === 'paid') {
+      const userId = session.metadata?.userId;
+      const durationStr = session.metadata?.duration || '1 Month';
+      
+      let days = 30;
+      if (durationStr.includes('3')) days = 90;
+      if (durationStr.includes('6')) days = 180;
+
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + days);
+      
+      db.prepare('UPDATE users SET subscription_end_date = ? WHERE id = ?').run(endDate.toISOString(), userId);
+      
+      res.json({ success: true, subscriptionEndDate: endDate.toISOString() });
+    } else {
+      res.status(400).json({ error: 'Payment not completed' });
+    }
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
