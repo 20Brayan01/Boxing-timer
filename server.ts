@@ -43,6 +43,9 @@ async function startServer() {
     }
 
     try {
+      // Use the request origin to construct redirect URLs for multi-environment support (Local, AI Studio, Netlify)
+      const origin = req.headers.origin || process.env.APP_URL || 'http://localhost:3000';
+      
       // In a real app, you'd use actual price IDs from your Stripe dashboard
       // For this demo, we'll create a session with ad-hoc line items
       const session = await stripeClient.checkout.sessions.create({
@@ -61,8 +64,8 @@ async function startServer() {
           },
         ],
         mode: 'payment',
-        success_url: `${process.env.APP_URL || 'http://localhost:3000'}?session_id={CHECKOUT_SESSION_ID}&payment=success`,
-        cancel_url: `${process.env.APP_URL || 'http://localhost:3000'}?payment=cancel`,
+        success_url: `${origin}?session_id={CHECKOUT_SESSION_ID}&payment=success`,
+        cancel_url: `${origin}?payment=cancel`,
       });
 
       res.json({ url: session.url });
