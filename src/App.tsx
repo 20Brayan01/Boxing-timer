@@ -292,6 +292,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState<View>('tabs');
   const [isPremium, setIsPremium] = useState(false);
   const [showSubscription, setShowSubscription] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   
   const [config, setConfig] = useState<Config>(DEFAULT_CONFIG);
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
@@ -319,8 +320,44 @@ export default function App() {
     const timer = setTimeout(() => {
       setShowSplash(false);
     }, 2000);
+
+    // Check for successful payment in URL
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success') {
+      setIsPremium(true);
+      // Optional: clear the URL params
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     return () => clearTimeout(timer);
   }, []);
+
+  const handleCheckout = async (plan: any) => {
+    setIsProcessingPayment(true);
+    try {
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planName: plan.name,
+          price: plan.price,
+          duration: plan.duration
+        }),
+      });
+
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error(data.error || 'Failed to create checkout session');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('Payment failed to initialize. Please try again later.');
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
 
   // Dark mode effect
   useEffect(() => {
@@ -1555,15 +1592,13 @@ export default function App() {
                 ].map((plan, i) => (
                   <button
                     key={i}
-                    onClick={() => {
-                      setIsPremium(true);
-                      setShowSubscription(false);
-                    }}
+                    disabled={isProcessingPayment}
+                    onClick={() => handleCheckout(plan)}
                     className={`w-full relative overflow-hidden flex items-center justify-between p-6 border rounded-3xl transition-all active:scale-[0.98] group ${
                       plan.popular 
                         ? (isDarkMode ? 'bg-amber-500/10 border-amber-500 shadow-lg shadow-amber-500/10' : 'bg-amber-50 border-amber-500 shadow-lg shadow-amber-900/5')
                         : (isDarkMode ? 'bg-white/5 border-white/10 hover:border-white/20' : 'bg-slate-50 border-slate-200 hover:border-slate-300')
-                    }`}
+                    } ${isProcessingPayment ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     {/* Shining Strike for popular plan */}
                     {plan.popular && (
@@ -1581,12 +1616,20 @@ export default function App() {
                     </div>
 
                     <div className="text-right">
-                      <div className="text-2xl font-display font-black italic">{plan.price}</div>
-                      <div className="text-[10px] opacity-40 font-medium">{plan.desc}</div>
+                      {isProcessingPayment ? (
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-amber-500"></div>
+                      ) : (
+                        <>
+                          <div className="text-2xl font-display font-black italic">{plan.price}</div>
+                          <div className="text-[10px] opacity-40 font-medium">{plan.desc}</div>
+                        </>
+                      )}
                     </div>
 
                     {/* Hover Shine */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer pointer-events-none" />
+                    {!isProcessingPayment && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer pointer-events-none" />
+                    )}
                   </button>
                 ))}
               </div>
