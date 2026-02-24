@@ -298,6 +298,7 @@ export default function App() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
   const [showRating, setShowRating] = useState(false);
+  const [showWorkoutOverlay, setShowWorkoutOverlay] = useState(false);
   const [rating, setRating] = useState(0);
   
   // Timer State
@@ -1318,12 +1319,18 @@ export default function App() {
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="w-full max-w-md mb-8 z-10"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setShowWorkoutOverlay(true)}
+                className="w-full max-w-md mb-8 z-10 cursor-pointer"
               >
                 <div className={`p-5 rounded-[32px] border ${isDarkMode ? 'glass-card border-white/10' : 'bg-white border-slate-200 shadow-sm'}`}>
                   <div className="flex items-center gap-4 mb-4">
-                    <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-white/10">
+                    <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-white/10 relative">
                       <img src={selectedWorkout.gifUrl} alt={selectedWorkout.name} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                        <Plus size={16} className="text-white" />
+                      </div>
                     </div>
                     <div>
                       <div className="text-[10px] font-black uppercase tracking-widest text-warmup mb-0.5">
@@ -1348,6 +1355,10 @@ export default function App() {
                       </p>
                     </motion.div>
                   </AnimatePresence>
+                  
+                  <div className="mt-3 flex justify-center">
+                    <span className="text-[8px] font-bold uppercase tracking-widest opacity-30">Tap to expand tutorial</span>
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -1383,6 +1394,71 @@ export default function App() {
             </button>
           </div>
         </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Workout Tutorial Overlay */}
+      <AnimatePresence>
+        {showWorkoutOverlay && selectedWorkout && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-black/95 backdrop-blur-xl"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className={`w-full max-w-md border rounded-[40px] overflow-hidden shadow-2xl ${
+                isDarkMode ? 'glass-card border-white/10' : 'bg-white border-slate-200'
+              }`}
+            >
+              <div className="relative aspect-video w-full overflow-hidden">
+                <img src={selectedWorkout.gifUrl} alt={selectedWorkout.name} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                <button 
+                  onClick={() => setShowWorkoutOverlay(false)}
+                  className="absolute top-4 right-4 p-2 rounded-full bg-black/50 text-white backdrop-blur-md hover:bg-black/70 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+                <div className="absolute bottom-4 left-6">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-warmup mb-1 block">Tutorial Mode</span>
+                  <h2 className="text-2xl font-display font-black italic tracking-tight">{selectedWorkout.name}</h2>
+                </div>
+              </div>
+              
+              <div className="p-8">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 rounded-2xl bg-warmup/10 text-warmup flex items-center justify-center text-xl font-display font-black italic">
+                    {timerState === 'REST' ? currentRound + 1 : currentRound}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg italic font-display">
+                      {timerState === 'REST' ? 'Next Round Focus' : 'Current Round Focus'}
+                    </h3>
+                    <p className="text-xs opacity-40 uppercase tracking-widest font-bold">Round {timerState === 'REST' ? currentRound + 1 : currentRound} of {config.rounds}</p>
+                  </div>
+                </div>
+                
+                <div className={`p-6 rounded-3xl ${isDarkMode ? 'bg-white/5 border border-white/5' : 'bg-slate-50 border-slate-100'}`}>
+                  <p className="text-lg font-medium leading-relaxed italic text-center">
+                    "{timerState === 'REST' 
+                      ? selectedWorkout.instructions.find(i => i.round === currentRound + 1)?.instruction || 'Get ready for the next round!'
+                      : selectedWorkout.instructions.find(i => i.round === currentRound)?.instruction || 'Keep pushing!'}"
+                  </p>
+                </div>
+                
+                <button
+                  onClick={() => setShowWorkoutOverlay(false)}
+                  className="w-full mt-8 py-5 bg-warmup text-white font-bold rounded-2xl shadow-xl shadow-warmup/20 active:scale-95 transition-transform"
+                >
+                  Back to Timer
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 
