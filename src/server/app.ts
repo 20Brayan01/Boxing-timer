@@ -3,7 +3,14 @@ import Stripe from 'stripe';
 import dotenv from 'dotenv';
 import db from './db';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { seed } from './seed';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const dbPath = path.join(__dirname, '../../data.db');
 
 dotenv.config();
 seed();
@@ -241,6 +248,26 @@ app.post('/api/admin/plans', authenticate, isAdmin, (req, res) => {
     res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Backup API
+app.get('/api/admin/backup', authenticate, isAdmin, (req, res) => {
+  try {
+    if (!fs.existsSync(dbPath)) {
+      return res.status(404).json({ error: 'Database file not found' });
+    }
+    
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `spartime-backup-${timestamp}.db`;
+    
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    
+    const fileStream = fs.createReadStream(dbPath);
+    fileStream.pipe(res);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Backup failed: ' + error.message });
   }
 });
 

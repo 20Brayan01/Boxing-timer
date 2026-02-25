@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { 
   Users, DollarSign, Activity, Plus, Trash2, Edit2, 
   ChevronRight, ArrowLeft, Save, X, LayoutDashboard, 
-  Dumbbell, CreditCard, TrendingUp
+  Dumbbell, CreditCard, TrendingUp, Download
 } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, 
@@ -85,6 +85,28 @@ export default function AdminPanel({ onClose, token }: AdminPanelProps) {
     }
   };
 
+  const handleDownloadBackup = async () => {
+    try {
+      const res = await fetch('/api/admin/backup', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Backup failed');
+      
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `spartime-backup-${new Date().toISOString().split('T')[0]}.db`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Backup error:', error);
+      alert('Failed to download backup');
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[100] bg-zinc-950 flex flex-col md:flex-row overflow-hidden">
       {/* Sidebar */}
@@ -116,6 +138,16 @@ export default function AdminPanel({ onClose, token }: AdminPanelProps) {
               {item.label}
             </button>
           ))}
+
+          <div className="pt-4 mt-4 border-t border-white/10">
+            <button 
+              onClick={handleDownloadBackup}
+              className="w-full flex items-center gap-3 px-4 py-3 text-zinc-400 hover:text-emerald-500 transition-colors"
+            >
+              <Download size={20} />
+              Download Backup
+            </button>
+          </div>
         </nav>
 
         <button 
