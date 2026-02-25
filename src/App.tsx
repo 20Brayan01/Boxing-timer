@@ -528,6 +528,8 @@ export default function App() {
   const [currentView, setCurrentView] = useState<View>('tabs');
   const [isPremium, setIsPremium] = useState(false);
   const [showSubscription, setShowSubscription] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [authSource, setAuthSource] = useState<'generic' | 'subscription'>('generic');
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   
   const [config, setConfig] = useState<Config>(DEFAULT_CONFIG);
@@ -664,9 +666,30 @@ export default function App() {
           localStorage.setItem('token', data.token);
           setToken(data.token);
           setUser(data.user);
+          setIsPremium(!!data.user.subscription_end_date && new Date(data.user.subscription_end_date) > new Date());
         } else {
-          setAuthMode('login');
-          setAuthError('Account created! Please login.');
+          // Auto-login after signup
+          const loginRes = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: authEmail, password: authPassword })
+          });
+          const loginData = await loginRes.json();
+          if (loginRes.ok) {
+            localStorage.setItem('token', loginData.token);
+            setToken(loginData.token);
+            setUser(loginData.user);
+            setIsPremium(!!loginData.user.subscription_end_date && new Date(loginData.user.subscription_end_date) > new Date());
+            
+            if (authSource === 'subscription') {
+              setShowSubscription(true);
+            } else {
+              setShowWelcomeModal(true);
+            }
+          } else {
+            setAuthMode('login');
+            setAuthError('Account created! Please login.');
+          }
         }
       } else {
         setAuthError(data.error);
@@ -685,6 +708,7 @@ export default function App() {
 
   const handleCheckout = async (plan: any) => {
     if (!token) {
+      setAuthSource('subscription');
       setActiveTab('profile');
       setShowSubscription(false);
       return;
@@ -1189,6 +1213,7 @@ export default function App() {
                           
                           <div className="flex items-center gap-4">
                             <button 
+                              onClick={() => setShowSubscription(true)}
                               className={`px-6 py-3 font-bold rounded-xl shadow-xl transition-all active:scale-95 ${
                                 isDarkMode ? 'bg-amber-500 text-black shadow-amber-500/20' : 'bg-black text-white shadow-black/20'
                               }`}
@@ -2167,6 +2192,59 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {/* Welcome Modal */}
+      <AnimatePresence>
+        {showWelcomeModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[400] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className={`w-full max-w-sm p-8 rounded-[40px] text-center relative overflow-hidden border ${
+                isDarkMode ? 'bg-bg border-white/10' : 'bg-white border-slate-200'
+              } shadow-2xl`}
+            >
+              <div className="absolute -top-24 -right-24 w-48 h-48 bg-warmup/20 rounded-full blur-3xl" />
+              
+              <div className="w-20 h-20 bg-warmup rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-warmup/30 rotate-12">
+                <Zap size={40} className="text-white" />
+              </div>
+              
+              <h2 className="text-3xl font-display font-black italic mb-3 tracking-tight uppercase">
+                Welcome to the Squad
+              </h2>
+              
+              <p className={`mb-8 leading-relaxed ${isDarkMode ? 'text-white/60' : 'text-slate-500'}`}>
+                You're officially part of the Wu-Gong Boxing School. Ready to transform your game?
+              </p>
+              
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    setShowWelcomeModal(false);
+                    setShowSubscription(true);
+                  }}
+                  className="w-full py-4 bg-warmup text-white font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-warmup/20 active:scale-95 transition-transform"
+                >
+                  Go Elite Now
+                </button>
+                <button
+                  onClick={() => setShowWelcomeModal(false)}
+                  className={`w-full py-4 font-bold uppercase tracking-widest text-xs opacity-40 hover:opacity-100 transition-opacity`}
+                >
+                  Maybe Later
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Rating Modal */}
       <AnimatePresence>
         {showRating && (
@@ -2342,7 +2420,10 @@ export default function App() {
             >
               <NavButton active={activeTab === 'home'} onClick={() => setActiveTab('home')} icon={<Home size={20} />} label="Home" isDarkMode={isDarkMode} />
               <NavButton active={activeTab === 'workouts'} onClick={() => setActiveTab('workouts')} icon={<Dumbbell size={20} />} label="Workouts" isDarkMode={isDarkMode} />
-              <NavButton active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<User size={20} />} label="Profile" isDarkMode={isDarkMode} />
+              <NavButton active={activeTab === 'profile'} onClick={() => {
+                setAuthSource('generic');
+                setActiveTab('profile');
+              }} icon={<User size={20} />} label="Profile" isDarkMode={isDarkMode} />
             </motion.nav>
           </div>
         )}
