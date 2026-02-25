@@ -150,7 +150,7 @@ const WORKOUTS: Workout[] = [
     difficulty: 'Beginner',
     completions: 2100,
     rating: 4.6,
-    isPremium: false,
+    isPremium: true,
     gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/l0HlT6fS6S6S6S6S6/giphy.gif',
     instructions: [
       { round: 1, instruction: 'High Guard: Keep elbows in, chin down.' },
@@ -216,7 +216,7 @@ const WORKOUTS: Workout[] = [
     difficulty: 'Intermediate',
     completions: 920,
     rating: 4.7,
-    isPremium: false,
+    isPremium: true,
     gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
     instructions: [
       { round: 1, instruction: 'Grounding: Feel the floor, sit on your punches.' },
@@ -238,7 +238,7 @@ const WORKOUTS: Workout[] = [
     difficulty: 'Beginner',
     completions: 3400,
     rating: 4.5,
-    isPremium: false,
+    isPremium: true,
     gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
     instructions: [
       { round: 1, instruction: 'Footwork only: Hands up, move in all directions.' },
@@ -281,7 +281,7 @@ const WORKOUTS: Workout[] = [
     difficulty: 'Intermediate',
     completions: 1100,
     rating: 4.7,
-    isPremium: false,
+    isPremium: true,
     gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
     instructions: [
       { round: 1, instruction: 'Slip Jab: Return your own jab.' },
@@ -305,7 +305,7 @@ const WORKOUTS: Workout[] = [
     difficulty: 'Intermediate',
     completions: 890,
     rating: 4.6,
-    isPremium: false,
+    isPremium: true,
     gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/l0HlT6fS6S6S6S6S6/giphy.gif',
     instructions: [
       { round: 1, instruction: 'Jab to Body: Change levels quickly.' },
@@ -353,7 +353,7 @@ const WORKOUTS: Workout[] = [
     difficulty: 'Beginner',
     completions: 1500,
     rating: 4.4,
-    isPremium: false,
+    isPremium: true,
     gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
     instructions: [
       { round: 1, instruction: 'Step and Slide: Forward, back, left, right.' },
@@ -420,7 +420,7 @@ const WORKOUTS: Workout[] = [
     difficulty: 'Intermediate',
     completions: 780,
     rating: 4.6,
-    isPremium: false,
+    isPremium: true,
     gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
     instructions: [
       { round: 1, instruction: 'Reactive Jabs: Fire when you see an opening.' },
@@ -466,7 +466,7 @@ const WORKOUTS: Workout[] = [
     difficulty: 'Beginner',
     completions: 5600,
     rating: 4.3,
-    isPremium: false,
+    isPremium: true,
     gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/l0HlT6fS6S6S6S6S6/giphy.gif',
     instructions: [
       { round: 1, instruction: 'Stance Check: Feet shoulder width, hands up.' },
@@ -547,6 +547,7 @@ export default function App() {
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authError, setAuthError] = useState('');
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
 
   // Payment Result State
   const [paymentResult, setPaymentResult] = useState<'success' | 'failure' | null>(null);
@@ -653,6 +654,7 @@ export default function App() {
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
+    setIsAuthLoading(true);
     const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/signup';
     try {
       const res = await fetch(endpoint, {
@@ -696,6 +698,8 @@ export default function App() {
       }
     } catch (err) {
       setAuthError('Authentication failed');
+    } finally {
+      setIsAuthLoading(false);
     }
   };
 
@@ -1513,15 +1517,20 @@ export default function App() {
 
                           <button 
                             type="submit"
-                            className="w-full py-5 bg-warmup text-white font-bold rounded-2xl shadow-xl shadow-warmup/20 active:scale-95 transition-transform"
+                            disabled={isAuthLoading}
+                            className={`w-full py-5 bg-warmup text-white font-bold rounded-2xl shadow-xl shadow-warmup/20 active:scale-95 transition-transform flex items-center justify-center gap-2 ${isAuthLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
                           >
+                            {isAuthLoading && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
                             {authMode === 'login' ? 'Login' : 'Sign Up'}
                           </button>
                         </form>
 
                         <div className="mt-8 text-center">
                           <button 
-                            onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+                            onClick={() => {
+                              setAuthMode(authMode === 'login' ? 'signup' : 'login');
+                              setAuthError('');
+                            }}
                             className="text-xs font-bold opacity-40 hover:opacity-100 transition-opacity"
                           >
                             {authMode === 'login' ? "Don't have an account? Sign Up" : "Already have an account? Login"}
@@ -1817,9 +1826,9 @@ export default function App() {
               <div className="space-y-5 pb-10">
                 {[
                   { label: "Rounds", value: config.rounds, onChange: (v: number) => setConfig(prev => ({ ...prev, rounds: Math.max(1, v) })) },
-                  { label: "Fight Time", value: config.fightTime, isTime: true, step: 30, onChange: (v: number) => setConfig(prev => ({ ...prev, fightTime: Math.max(10, v) })) },
-                  { label: "Rest Time", value: config.restTime, isTime: true, step: 10, onChange: (v: number) => setConfig(prev => ({ ...prev, restTime: Math.max(5, v) })) },
-                  { label: "Warmup", value: config.warmupTime, isTime: true, step: 5, onChange: (v: number) => setConfig(prev => ({ ...prev, warmupTime: Math.max(5, v) })) },
+                  { label: "Fight Time", value: config.fightTime, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, fightTime: Math.max(10, v) })) },
+                  { label: "Rest Time", value: config.restTime, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, restTime: Math.max(5, v) })) },
+                  { label: "Warmup", value: config.warmupTime, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, warmupTime: Math.max(5, v) })) },
                 ].map((item, idx) => (
                   <motion.div
                     key={item.label}
@@ -1832,7 +1841,6 @@ export default function App() {
                       value={item.value} 
                       isTime={item.isTime}
                       onChange={item.onChange}
-                      step={item.step}
                       isDarkMode={isDarkMode}
                     />
                   </motion.div>
@@ -2477,13 +2485,12 @@ function NavButton({ active, onClick, icon, label, isDarkMode }: { active: boole
   );
 }
 
-function ConfigStepper({ label, value, onChange, isDarkMode, isTime = false, step = 1 }: { 
+function ConfigStepper({ label, value, onChange, isDarkMode, isTime = false }: { 
   label: string; 
   value: number; 
   onChange: (v: number) => void;
   isDarkMode: boolean;
   isTime?: boolean;
-  step?: number;
 }) {
   const formatValue = (v: number) => {
     if (!isTime) return v;
@@ -2492,38 +2499,62 @@ function ConfigStepper({ label, value, onChange, isDarkMode, isTime = false, ste
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
+  const increments = isTime ? [1, 30, 60] : [1];
+
   return (
     <div className="flex flex-col gap-2">
       <span className={`text-[9px] font-bold uppercase tracking-widest px-2 ${isDarkMode ? 'text-white/40' : 'text-slate-500'}`}>{label}</span>
-      <div className={`flex items-center justify-between rounded-[24px] p-1 border transition-colors ${
+      <div className={`flex flex-col gap-4 rounded-[32px] p-4 border transition-colors ${
         isDarkMode 
           ? 'glass-card border-white/5' 
           : 'bg-white border-slate-200 shadow-sm'
       }`}>
-        <button 
-          onClick={() => onChange(value - step)}
-          className={`w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-90 ${
-            isDarkMode ? 'bg-white/5 hover:bg-white/10 border border-white/5' : 'bg-slate-50 hover:bg-slate-100 text-slate-600'
-          }`}
-        >
-          <Minus size={18} />
-        </button>
-        
-        <div className="flex flex-col items-center">
-          <span className={`text-xl font-display font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-            {formatValue(value)}
-          </span>
-          {isTime && <span className="text-[7px] opacity-30 uppercase font-bold tracking-widest">Minutes</span>}
+        <div className="flex items-center justify-center mb-2">
+          <div className="flex flex-col items-center">
+            <span className={`text-3xl font-display font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+              {formatValue(value)}
+            </span>
+            {isTime && <span className="text-[8px] opacity-30 uppercase font-bold tracking-widest">Minutes : Seconds</span>}
+          </div>
         </div>
 
-        <button 
-          onClick={() => onChange(value + step)}
-          className={`w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-90 ${
-            isDarkMode ? 'bg-white/5 hover:bg-white/10 border border-white/5' : 'bg-slate-50 hover:bg-slate-100 text-slate-600'
-          }`}
-        >
-          <Plus size={18} />
-        </button>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-2">
+            <span className="text-[7px] uppercase font-bold tracking-widest opacity-30 text-center">Decrease</span>
+            <div className="flex justify-center gap-2">
+              {increments.map(inc => (
+                <button 
+                  key={`dec-${inc}`}
+                  onClick={() => onChange(Math.max(inc === 1 ? (isTime ? 5 : 1) : 0, value - inc))}
+                  className={`flex-1 h-10 flex flex-col items-center justify-center rounded-xl transition-all active:scale-90 ${
+                    isDarkMode ? 'bg-white/5 hover:bg-white/10 border border-white/5' : 'bg-slate-50 hover:bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  <Minus size={12} />
+                  <span className="text-[8px] font-bold">{inc}{isTime ? 's' : ''}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <span className="text-[7px] uppercase font-bold tracking-widest opacity-30 text-center">Increase</span>
+            <div className="flex justify-center gap-2">
+              {increments.map(inc => (
+                <button 
+                  key={`inc-${inc}`}
+                  onClick={() => onChange(value + inc)}
+                  className={`flex-1 h-10 flex flex-col items-center justify-center rounded-xl transition-all active:scale-90 ${
+                    isDarkMode ? 'bg-white/5 hover:bg-white/10 border border-white/5' : 'bg-slate-50 hover:bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  <Plus size={12} />
+                  <span className="text-[8px] font-bold">{inc}{isTime ? 's' : ''}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
