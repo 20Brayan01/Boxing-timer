@@ -12,13 +12,15 @@
 
 [[redirects]]
   from = "/admin"
-  to = "/apps/admin/index.html"
+  to = "/admin.html"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/admin/*"
-  to = "/apps/admin/index.html"
+  to = "/admin.html"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/*"

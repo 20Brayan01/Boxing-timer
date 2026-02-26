@@ -21,7 +21,7 @@ async function startServer() {
     app.get('/admin*', async (req, res, next) => {
       try {
         const url = req.originalUrl;
-        const templatePath = path.resolve(__dirname, 'apps/admin/index.html');
+        const templatePath = path.resolve(__dirname, 'admin.html');
         const template = fs.readFileSync(templatePath, 'utf-8');
         const html = await vite.transformIndexHtml(url, template);
         res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
