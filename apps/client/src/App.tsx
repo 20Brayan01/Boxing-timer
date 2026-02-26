@@ -13,32 +13,11 @@ import {
   ChevronLeft, ChevronRight, Share2, Zap, Coffee, ShieldCheck, TrendingUp, Moon, Sun,
   Crown, CheckCircle2, Sparkles, LayoutDashboard
 } from 'lucide-react';
-import AdminPanel from './components/AdminPanel';
+import { TimerState, Workout, User as SharedUser } from '../../../packages/shared/types';
 
-type TimerState = 'IDLE' | 'WARMUP' | 'FIGHT' | 'REST' | 'FINISHED';
-type Tab = 'home' | 'workouts' | 'profile' | 'admin';
+type Tab = 'home' | 'workouts' | 'profile';
 type View = 'tabs' | 'setup' | 'timer' | 'workout-detail';
 
-interface RoundInstruction {
-  round: number;
-  instruction: string;
-}
-
-interface Workout {
-  id: string;
-  name: string;
-  description: string;
-  rounds: number;
-  fightTime: number;
-  restTime: number;
-  category: 'Stamina' | 'Technique' | 'Power' | 'Speed';
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced' | 'Pro';
-  completions: number;
-  rating: number;
-  isPremium: boolean;
-  gifUrl: string;
-  instructions: RoundInstruction[];
-}
 
 const WORKOUTS: Workout[] = [
   {
@@ -985,13 +964,6 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/admin" element={
-        token && user?.role === 'admin' ? (
-          <AdminPanel token={token} onClose={() => navigate('/')} />
-        ) : (
-          <Navigate to="/" />
-        )
-      } />
       <Route path="*" element={
         <div className="flex flex-col h-screen overflow-hidden bg-bg text-white">
       {/* Background Atmosphere */}
@@ -1672,22 +1644,6 @@ export default function App() {
                             </span>
                             <ChevronRight size={18} className="opacity-40" />
                           </button>
-
-                          {user?.role === 'admin' && (
-                            <button 
-                              onClick={() => navigate('/admin')}
-                              className={`w-full flex items-center justify-between p-5 rounded-2xl transition-all active:scale-[0.98] mt-4 ${
-                                isDarkMode 
-                                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20' 
-                                  : 'bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100'
-                              }`}
-                            >
-                              <span className="flex items-center gap-3 font-bold text-sm">
-                                <LayoutDashboard size={18} /> Admin Dashboard
-                              </span>
-                              <ChevronRight size={18} className="opacity-40" />
-                            </button>
-                          )}
                         </div>
                       </>
                     )}

@@ -1,32 +1,100 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, DollarSign, Activity, Plus, Trash2, Edit2, 
   ChevronRight, ArrowLeft, Save, X, LayoutDashboard, 
-  Dumbbell, CreditCard, TrendingUp, Download
+  Dumbbell, CreditCard, TrendingUp, Download, LogOut,
+  Lock
 } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer, AreaChart, Area 
 } from 'recharts';
+import { User, Workout, Plan } from '../../../packages/shared/types';
 
-interface AdminPanelProps {
-  onClose: () => void;
-  token: string;
-}
+export default function AdminApp() {
+  const [token, setToken] = useState<string | null>(localStorage.getItem('admin_token'));
+  const [user, setUser] = useState<User | null>(null);
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
 
-export default function AdminPanel({ onClose, token }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'workouts' | 'plans'>('dashboard');
   const [stats, setStats] = useState<any>(null);
-  const [users, setUsers] = useState<any[]>([]);
-  const [workouts, setWorkouts] = useState<any[]>([]);
-  const [plans, setPlans] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [users, setUsers] = useState<User[]>([]);
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [editingWorkout, setEditingWorkout] = useState<any>(null);
 
   useEffect(() => {
-    fetchData();
-  }, [activeTab]);
+    if (token) {
+      fetchUser();
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (token && user) {
+      fetchData();
+    }
+  }, [activeTab, token, user]);
+
+  const fetchUser = async () => {
+    try {
+      const res = await fetch('/api/auth/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const userData = await res.json();
+        if (userData.role !== 'admin') {
+          handleLogout();
+          setAuthError('Access denied. Admin only.');
+          return;
+        }
+        setUser(userData);
+      } else {
+        handleLogout();
+      }
+    } catch (err) {
+      handleLogout();
+    }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAuthLoading(true);
+    setAuthError('');
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: authEmail, password: authPassword })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (data.user.role !== 'admin') {
+          setAuthError('Access denied. Admin only.');
+          return;
+        }
+        localStorage.setItem('admin_token', data.token);
+        setToken(data.token);
+        setUser(data.user);
+      } else {
+        setAuthError(data.error || 'Login failed');
+      }
+    } catch (err) {
+      setAuthError('Connection error');
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('admin_token');
+    setToken(null);
+    setUser(null);
+  };
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -107,8 +175,67 @@ export default function AdminPanel({ onClose, token }: AdminPanelProps) {
     }
   };
 
+  if (!token || !user) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md bg-zinc-900 border border-white/10 p-8 rounded-3xl"
+        >
+          <div className="flex flex-col items-center mb-8">
+            <div className="w-16 h-16 bg-emerald-500 rounded-2xl flex items-center justify-center mb-4">
+              <Lock className="text-black w-8 h-8" />
+            </div>
+            <h1 className="text-2xl font-bold text-white">Wu-Boxing Admin</h1>
+            <p className="text-zinc-500 text-sm">Management Dashboard</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-zinc-500 uppercase">Admin Email</label>
+              <input 
+                type="email" 
+                required
+                value={authEmail}
+                onChange={(e) => setAuthEmail(e.target.value)}
+                className="w-full bg-zinc-950 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500 transition-colors"
+                placeholder="admin@wu-boxing.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-zinc-500 uppercase">Password</label>
+              <input 
+                type="password" 
+                required
+                value={authPassword}
+                onChange={(e) => setAuthPassword(e.target.value)}
+                className="w-full bg-zinc-950 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500 transition-colors"
+                placeholder="••••••••"
+              />
+            </div>
+
+            {authError && (
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm text-center">
+                {authError}
+              </div>
+            )}
+
+            <button 
+              type="submit"
+              disabled={isAuthLoading}
+              className="w-full py-4 bg-emerald-500 text-black font-bold rounded-xl hover:bg-emerald-400 transition-all active:scale-[0.98] disabled:opacity-50"
+            >
+              {isAuthLoading ? 'Authenticating...' : 'Login to Dashboard'}
+            </button>
+          </form>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed inset-0 z-[100] bg-zinc-950 flex flex-col md:flex-row overflow-hidden">
+    <div className="min-h-screen bg-zinc-950 flex flex-col md:flex-row overflow-hidden">
       {/* Sidebar */}
       <div className="w-full md:w-64 bg-zinc-900 border-b md:border-b-0 md:border-r border-white/10 p-6 flex flex-col">
         <div className="flex items-center gap-3 mb-10">
@@ -151,11 +278,11 @@ export default function AdminPanel({ onClose, token }: AdminPanelProps) {
         </nav>
 
         <button 
-          onClick={onClose}
-          className="mt-auto flex items-center gap-3 px-4 py-3 text-zinc-400 hover:text-white transition-colors"
+          onClick={handleLogout}
+          className="mt-auto flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors"
         >
-          <ArrowLeft size={20} />
-          Back to App
+          <LogOut size={20} />
+          Sign Out
         </button>
       </div>
 
