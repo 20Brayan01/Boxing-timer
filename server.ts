@@ -3,7 +3,7 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import app from './server/src/app';
+import app from './server/src/app.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
