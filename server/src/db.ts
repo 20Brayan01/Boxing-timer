@@ -1,12 +1,24 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
-const dbPath = process.env.NETLIFY 
-  ? path.join(process.cwd(), 'data.db')
-  : path.join(path.dirname(fileURLToPath(import.meta.url)), '../../data.db');
+const isNetlify = !!process.env.NETLIFY;
+const bundledDbPath = path.join(process.cwd(), 'data.db');
+const writableDbPath = isNetlify ? path.join('/tmp', 'data.db') : bundledDbPath;
 
-const db = new Database(dbPath);
+// On Netlify, copy the bundled DB to /tmp so it's writable
+if (isNetlify && fs.existsSync(bundledDbPath) && !fs.existsSync(writableDbPath)) {
+  try {
+    fs.copyFileSync(bundledDbPath, writableDbPath);
+    console.log('Copied database to /tmp for write access');
+  } catch (err) {
+    console.error('Failed to copy database to /tmp:', err);
+  }
+}
+
+const db = new Database(writableDbPath);
+export const activeDbPath = writableDbPath;
 
 // Initialize tables
 db.exec(`
