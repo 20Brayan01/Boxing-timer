@@ -5,6 +5,8 @@
 [functions]
   directory = "netlify/functions"
   external_node_modules = ["better-sqlite3"]
+  node_bundler = "esbuild"
+  node_format = "esm"
 
 [[redirects]]
   from = "/api/*"

@@ -1,12 +1,12 @@
 import express from 'express';
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
-import db from './db.ts';
+import db from './db';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { seed } from './seed.ts';
+import { seed } from './seed';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
