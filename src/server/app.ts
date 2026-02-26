@@ -39,13 +39,28 @@ const getStripe = () => {
 // Auth Middleware
 const authenticate = (req: any, res: any, next: any) => {
   const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  if (!token) {
+    console.log('Auth failed: No token');
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 
-  const session = db.prepare('SELECT user_id FROM sessions WHERE id = ? AND expires_at > datetime("now")').get(token) as any;
-  if (!session) return res.status(401).json({ error: 'Session expired or invalid' });
+  const session = db.prepare("SELECT user_id, expires_at FROM sessions WHERE id = ?").get(token) as any;
+  if (!session) {
+    console.log('Auth failed: Session not found for token');
+    return res.status(401).json({ error: 'Session expired or invalid' });
+  }
+
+  const isExpired = new Date(session.expires_at) < new Date();
+  if (isExpired) {
+    console.log(`Auth failed: Session expired. Expires at: ${session.expires_at}`);
+    return res.status(401).json({ error: 'Session expired or invalid' });
+  }
 
   const user = db.prepare('SELECT id, role FROM users WHERE id = ?').get(session.user_id) as any;
-  if (!user) return res.status(401).json({ error: 'User not found' });
+  if (!user) {
+    console.log(`Auth failed: User not found for id ${session.user_id}`);
+    return res.status(401).json({ error: 'User not found' });
+  }
 
   req.userId = user.id;
   req.userRole = user.role;
@@ -64,27 +79,46 @@ const isAdmin = (req: any, res: any, next: any) => {
 // Auth
 app.post('/api/auth/signup', (req, res) => {
   const { email, password } = req.body;
-  const role = email === 'admin@wu-boxing.com' ? 'admin' : 'user';
+  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+  
+  const normalizedEmail = email.toLowerCase().trim();
+  const role = normalizedEmail === 'admin@wu-boxing.com' ? 'admin' : 'user';
+  
   try {
-    const result = db.prepare('INSERT INTO users (email, password, role) VALUES (?, ?, ?)').run(email, password, role);
+    const result = db.prepare('INSERT INTO users (email, password, role) VALUES (?, ?, ?)').run(normalizedEmail, password, role);
+    console.log(`User signed up: ${normalizedEmail}`);
     res.json({ success: true, userId: result.lastInsertRowid });
   } catch (error: any) {
+    console.error(`Signup error for ${normalizedEmail}:`, error.message);
     res.status(400).json({ error: error.message.includes('UNIQUE') ? 'Email already exists' : error.message });
   }
 });
 
 app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
-  const user = db.prepare('SELECT id, email, role FROM users WHERE email = ? AND password = ?').get(email, password) as any;
+  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+
+  const normalizedEmail = email.toLowerCase().trim();
+  console.log(`Login attempt: ${normalizedEmail}`);
+
+  const user = db.prepare('SELECT id, email, role, subscription_end_date FROM users WHERE email = ? AND password = ?').get(normalizedEmail, password) as any;
   
-  if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+  if (!user) {
+    console.log(`Login failed for: ${normalizedEmail}`);
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
 
   const token = crypto.randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 days
   
-  db.prepare('INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)').run(token, user.id, expiresAt);
-  
-  res.json({ token, user });
+  try {
+    db.prepare('INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)').run(token, user.id, expiresAt);
+    console.log(`Session created for user: ${user.id}`);
+    res.json({ token, user });
+  } catch (error: any) {
+    console.error('Session creation error:', error.message);
+    res.status(500).json({ error: 'Failed to create session' });
+  }
 });
 
 app.get('/api/auth/me', authenticate, (req: any, res) => {

@@ -609,6 +609,9 @@ export default function App() {
           setIsPremium(!isExpired);
         }
       } else {
+        console.error('Fetch user failed with status:', res.status);
+        const errorData = await res.json().catch(() => ({}));
+        console.error('Fetch user error data:', errorData);
         handleLogout();
       }
     } catch (err) {
@@ -673,6 +676,8 @@ export default function App() {
           setToken(data.token);
           setUser(data.user);
           setIsPremium(!!data.user.subscription_end_date && new Date(data.user.subscription_end_date) > new Date());
+          setAuthEmail('');
+          setAuthPassword('');
         } else {
           // Auto-login after signup
           const loginRes = await fetch('/api/auth/login', {
@@ -686,6 +691,8 @@ export default function App() {
             setToken(loginData.token);
             setUser(loginData.user);
             setIsPremium(!!loginData.user.subscription_end_date && new Date(loginData.user.subscription_end_date) > new Date());
+            setAuthEmail('');
+            setAuthPassword('');
             
             if (authSource === 'subscription') {
               setShowSubscription(true);

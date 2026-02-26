@@ -124,4 +124,14 @@ export function seed() {
     INITIAL_PLANS.forEach(p => insertPlan.run(p));
     console.log('Seeded plans');
   }
+
+  const adminCount = db.prepare('SELECT COUNT(*) as count FROM users WHERE role = "admin"').get() as any;
+  if (adminCount.count === 0) {
+    db.prepare('INSERT INTO users (email, password, role) VALUES (?, ?, ?)').run(
+      'admin@wu-boxing.com',
+      'admin123',
+      'admin'
+    );
+    console.log('Seeded admin user');
+  }
 }
