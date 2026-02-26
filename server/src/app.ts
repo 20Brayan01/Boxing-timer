@@ -1,16 +1,16 @@
 import express from 'express';
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
-import db from './db';
+import db from './db.ts';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { seed } from './seed';
+import { seed } from './seed.ts';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const dbPath = path.join(__dirname, '../../data.db');
+const dbPath = process.env.NETLIFY 
+  ? path.join(process.cwd(), 'data.db')
+  : path.join(path.dirname(fileURLToPath(import.meta.url)), '../../data.db');
 
 dotenv.config();
 seed();
