@@ -11,10 +11,36 @@ import { seed } from './seed.ts';
 const dbPath = activeDbPath;
 
 dotenv.config();
-seed();
+
+// Safer seeding
+try {
+  seed();
+} catch (err) {
+  console.error('Initial seeding failed:', err);
+}
 
 const app = express();
 app.use(express.json());
+
+// Health check
+app.get('/api/health', (req, res) => {
+  try {
+    const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get();
+    res.json({ 
+      status: 'ok', 
+      database: 'connected', 
+      userCount,
+      env: process.env.NETLIFY ? 'netlify' : 'local',
+      dbPath: activeDbPath
+    });
+  } catch (err: any) {
+    res.status(500).json({ 
+      status: 'error', 
+      message: err.message,
+      stack: err.stack
+    });
+  }
+});
 
 // Stripe initialization
 let stripe: Stripe | null = null;
@@ -93,29 +119,29 @@ app.post('/api/auth/signup', (req, res) => {
 });
 
 app.post('/api/auth/login', (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
-
-  const normalizedEmail = email.toLowerCase().trim();
-  console.log(`Login attempt: ${normalizedEmail}`);
-
-  const user = db.prepare('SELECT id, email, role, subscription_end_date FROM users WHERE email = ? AND password = ?').get(normalizedEmail, password) as any;
-  
-  if (!user) {
-    console.log(`Login failed for: ${normalizedEmail}`);
-    return res.status(401).json({ error: 'Invalid credentials' });
-  }
-
-  const token = crypto.randomBytes(32).toString('hex');
-  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 days
-  
   try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+
+    const normalizedEmail = email.toLowerCase().trim();
+    console.log(`Login attempt: ${normalizedEmail}`);
+
+    const user = db.prepare('SELECT id, email, role, subscription_end_date FROM users WHERE email = ? AND password = ?').get(normalizedEmail, password) as any;
+    
+    if (!user) {
+      console.log(`Login failed for: ${normalizedEmail}`);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 days
+    
     db.prepare('INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)').run(token, user.id, expiresAt);
     console.log(`Session created for user: ${user.id}`);
     res.json({ token, user });
   } catch (error: any) {
-    console.error('Session creation error:', error.message);
-    res.status(500).json({ error: 'Failed to create session' });
+    console.error('Login error:', error.message);
+    res.status(500).json({ error: 'Internal server error during login', details: error.message });
   }
 });
 

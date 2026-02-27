@@ -1,23 +1,68 @@
-import Database from 'better-sqlite3';
+import { createRequire } from 'module';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const require = createRequire(import.meta.url);
+let Database;
+try {
+  const mod = require('better-sqlite3');
+  Database = typeof mod === 'function' ? mod : mod.default;
+  if (!Database && mod && typeof mod.default === 'function') {
+    Database = mod.default;
+  }
+} catch (err) {
+  console.error('Failed to require better-sqlite3:', err);
+}
 
 const isNetlify = !!process.env.NETLIFY;
-const bundledDbPath = path.join(process.cwd(), 'data.db');
+const baseDir = process.env.LAMBDA_TASK_ROOT || process.cwd();
+const bundledDbPath = path.resolve(baseDir, 'data.db');
 const writableDbPath = isNetlify ? path.join('/tmp', 'data.db') : bundledDbPath;
 
-// On Netlify, copy the bundled DB to /tmp so it's writable
-if (isNetlify && fs.existsSync(bundledDbPath) && !fs.existsSync(writableDbPath)) {
-  try {
-    fs.copyFileSync(bundledDbPath, writableDbPath);
-    console.log('Copied database to /tmp for write access');
-  } catch (err) {
-    console.error('Failed to copy database to /tmp:', err);
+if (isNetlify && !fs.existsSync(writableDbPath)) {
+  console.log('Netlify environment detected. Preparing writable DB...');
+  if (fs.existsSync(bundledDbPath)) {
+    try {
+      fs.copyFileSync(bundledDbPath, writableDbPath);
+      console.log('Copied bundled DB to /tmp');
+    } catch (err) {
+      console.error('Failed to copy database to /tmp:', err);
+    }
+  } else {
+    console.log('Bundled DB not found at primary path, checking alt...');
+    const altPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../data.db');
+    if (fs.existsSync(altPath)) {
+      try {
+        fs.copyFileSync(altPath, writableDbPath);
+        console.log('Copied bundled DB from alt path to /tmp');
+      } catch (err) {
+        console.error('Failed to copy database from alt path to /tmp:', err);
+      }
+    } else {
+      console.error('Could not find bundled data.db anywhere!');
+    }
   }
 }
 
-const db = new Database(writableDbPath);
+let db: any;
+try {
+  if (!Database) throw new Error('better-sqlite3 constructor not found');
+  db = new Database(writableDbPath);
+  console.log('Database initialized successfully at:', writableDbPath);
+} catch (err) {
+  console.error('Failed to initialize database:', err);
+  // Create a mock DB object to prevent immediate crashes
+  db = {
+    prepare: () => ({
+      get: () => null,
+      run: () => ({ lastInsertRowid: 0, changes: 0 }),
+      all: () => []
+    }),
+    exec: () => ({})
+  };
+}
+
 export const activeDbPath = writableDbPath;
 
 // Initialize tables

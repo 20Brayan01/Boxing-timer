@@ -5,8 +5,6 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
-
-[functions.api]
   external_node_modules = ["better-sqlite3"]
   node_format = "esm"
   included_files = ["data.db"]
