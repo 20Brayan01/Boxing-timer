@@ -1,7 +1,7 @@
 import express from 'express';
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
-import db, { activeDbPath } from './db.ts';
+import db, { activeDbPath, dbStatus } from './db.ts';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -31,12 +31,14 @@ app.get('/api/health', (req, res) => {
       database: 'connected', 
       userCount,
       env: process.env.NETLIFY ? 'netlify' : 'local',
-      dbPath: activeDbPath
+      dbPath: activeDbPath,
+      dbStatus
     });
   } catch (err: any) {
     res.status(500).json({ 
       status: 'error', 
       message: err.message,
+      dbStatus,
       stack: err.stack
     });
   }
@@ -126,10 +128,19 @@ app.post('/api/auth/login', (req, res) => {
     const normalizedEmail = email.toLowerCase().trim();
     console.log(`Login attempt: ${normalizedEmail}`);
 
-    const user = db.prepare('SELECT id, email, role, subscription_end_date FROM users WHERE email = ? AND password = ?').get(normalizedEmail, password) as any;
+    // Diagnostic: Check if any users exist
+    const totalUsers = db.prepare('SELECT COUNT(*) as count FROM users').get() as any;
+    console.log(`Total users in DB: ${totalUsers?.count}`);
+
+    const user = db.prepare('SELECT id, email, role, password, subscription_end_date FROM users WHERE email = ?').get(normalizedEmail) as any;
     
     if (!user) {
-      console.log(`Login failed for: ${normalizedEmail}`);
+      console.log(`Login failed: User not found for ${normalizedEmail}`);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    if (user.password !== password) {
+      console.log(`Login failed: Password mismatch for ${normalizedEmail}`);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -138,10 +149,10 @@ app.post('/api/auth/login', (req, res) => {
     
     db.prepare('INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)').run(token, user.id, expiresAt);
     console.log(`Session created for user: ${user.id}`);
-    res.json({ token, user });
+    res.json({ token, user: { id: user.id, email: user.email, role: user.role, subscription_end_date: user.subscription_end_date } });
   } catch (error: any) {
     console.error('Login error:', error.message);
-    res.status(500).json({ error: 'Internal server error during login', details: error.message });
+    res.status(500).json({ error: 'Internal server error during login', details: error.message, dbStatus });
   }
 });
 

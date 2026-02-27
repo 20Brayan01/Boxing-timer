@@ -4,6 +4,16 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const isNetlify = !!process.env.NETLIFY;
+const baseDir = process.env.LAMBDA_TASK_ROOT || process.cwd();
+const bundledDbPath = path.resolve(baseDir, 'data.db');
+const writableDbPath = isNetlify ? path.join('/tmp', 'data.db') : bundledDbPath;
+
+export const dbStatus = {
+  loaded: false,
+  path: writableDbPath,
+  isMock: false,
+  error: null as string | null
+};
 
 let Database: any;
 try {
@@ -14,13 +24,11 @@ try {
   if (!Database && mod && typeof mod.default === 'function') {
     Database = mod.default;
   }
-} catch (err) {
+  dbStatus.loaded = !!Database;
+} catch (err: any) {
   console.error('Failed to load better-sqlite3:', err);
+  dbStatus.error = err.message;
 }
-
-const baseDir = process.env.LAMBDA_TASK_ROOT || process.cwd();
-const bundledDbPath = path.resolve(baseDir, 'data.db');
-const writableDbPath = isNetlify ? path.join('/tmp', 'data.db') : bundledDbPath;
 
 if (isNetlify && !fs.existsSync(writableDbPath)) {
   console.log('Netlify environment detected. Preparing writable DB...');
@@ -28,8 +36,9 @@ if (isNetlify && !fs.existsSync(writableDbPath)) {
     try {
       fs.copyFileSync(bundledDbPath, writableDbPath);
       console.log('Copied bundled DB to /tmp');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to copy database to /tmp:', err);
+      dbStatus.error = `Copy failed: ${err.message}`;
     }
   } else {
     console.log('Bundled DB not found at primary path, checking alt...');
@@ -45,9 +54,11 @@ if (isNetlify && !fs.existsSync(writableDbPath)) {
         console.log('Copied bundled DB from alt path to /tmp');
       } else {
         console.error('Could not find bundled data.db anywhere!');
+        dbStatus.error = 'Bundled DB not found';
       }
-    } catch (pathErr) {
+    } catch (pathErr: any) {
       console.error('Error resolving alt database path:', pathErr);
+      dbStatus.error = `Path resolution error: ${pathErr.message}`;
     }
   }
 }
@@ -57,8 +68,10 @@ try {
   if (!Database) throw new Error('better-sqlite3 constructor not found');
   db = new Database(writableDbPath);
   console.log('Database initialized successfully at:', writableDbPath);
-} catch (err) {
+} catch (err: any) {
   console.error('Failed to initialize database:', err);
+  dbStatus.isMock = true;
+  dbStatus.error = dbStatus.error || err.message;
   // Create a mock DB object to prevent immediate crashes
   db = {
     prepare: () => ({

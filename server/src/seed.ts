@@ -103,35 +103,51 @@ const INITIAL_PLANS = [
 ];
 
 export function seed() {
-  const workoutCount = db.prepare('SELECT COUNT(*) as count FROM workouts').get() as any;
-  if (workoutCount.count === 0) {
-    const insertWorkout = db.prepare(`
-      INSERT INTO workouts (id, name, description, rounds, fight_time, rest_time, category, difficulty, completions, rating, is_premium, gif_url, instructions)
-      VALUES (@id, @name, @description, @rounds, @fight_time, @rest_time, @category, @difficulty, @completions, @rating, @is_premium, @gif_url, @instructions)
-    `);
-    
-    INITIAL_WORKOUTS.forEach(w => insertWorkout.run(w));
-    console.log('Seeded workouts');
-  }
+  console.log('Starting database seeding...');
+  try {
+    const workoutCount = db.prepare('SELECT COUNT(*) as count FROM workouts').get() as any;
+    if (workoutCount.count === 0) {
+      const insertWorkout = db.prepare(`
+        INSERT INTO workouts (id, name, description, rounds, fight_time, rest_time, category, difficulty, completions, rating, is_premium, gif_url, instructions)
+        VALUES (@id, @name, @description, @rounds, @fight_time, @rest_time, @category, @difficulty, @completions, @rating, @is_premium, @gif_url, @instructions)
+      `);
+      
+      INITIAL_WORKOUTS.forEach(w => insertWorkout.run(w));
+      console.log('Seeded workouts');
+    }
 
-  const planCount = db.prepare('SELECT COUNT(*) as count FROM plans').get() as any;
-  if (planCount.count === 0) {
-    const insertPlan = db.prepare(`
-      INSERT INTO plans (id, name, price, duration_months, features)
-      VALUES (@id, @name, @price, @duration_months, @features)
-    `);
-    
-    INITIAL_PLANS.forEach(p => insertPlan.run(p));
-    console.log('Seeded plans');
-  }
+    const planCount = db.prepare('SELECT COUNT(*) as count FROM plans').get() as any;
+    if (planCount.count === 0) {
+      const insertPlan = db.prepare(`
+        INSERT INTO plans (id, name, price, duration_months, features)
+        VALUES (@id, @name, @price, @duration_months, @features)
+      `);
+      
+      INITIAL_PLANS.forEach(p => insertPlan.run(p));
+      console.log('Seeded plans');
+    }
 
-  const adminCount = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'").get() as any;
-  if (adminCount.count === 0) {
-    db.prepare('INSERT INTO users (email, password, role) VALUES (?, ?, ?)').run(
-      'admin@wu-boxing.com',
-      'admin123',
-      'admin'
-    );
-    console.log('Seeded admin user');
+    const adminEmail = 'admin@wu-boxing.com';
+    const adminUser = db.prepare("SELECT * FROM users WHERE email = ?").get(adminEmail) as any;
+    
+    if (!adminUser) {
+      console.log('Admin user not found, creating...');
+      db.prepare('INSERT INTO users (email, password, role) VALUES (?, ?, ?)').run(
+        adminEmail,
+        'admin123',
+        'admin'
+      );
+      console.log('Seeded admin user');
+    } else {
+      console.log('Admin user already exists');
+      // Ensure password is correct if it exists
+      if (adminUser.password !== 'admin123') {
+        console.log('Updating admin password...');
+        db.prepare('UPDATE users SET password = ? WHERE email = ?').run('admin123', adminEmail);
+      }
+    }
+  } catch (err: any) {
+    console.error('Seeding error:', err.message);
+    throw err;
   }
 }
