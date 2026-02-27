@@ -3,19 +3,21 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 
-const require = createRequire(import.meta.url);
-let Database;
+const isNetlify = !!process.env.NETLIFY;
+
+let Database: any;
 try {
-  const mod = require('better-sqlite3');
+  // Try to use global require if available (CJS), otherwise create it (ESM)
+  const req = typeof require !== 'undefined' ? require : createRequire(import.meta.url);
+  const mod = req('better-sqlite3');
   Database = typeof mod === 'function' ? mod : mod.default;
   if (!Database && mod && typeof mod.default === 'function') {
     Database = mod.default;
   }
 } catch (err) {
-  console.error('Failed to require better-sqlite3:', err);
+  console.error('Failed to load better-sqlite3:', err);
 }
 
-const isNetlify = !!process.env.NETLIFY;
 const baseDir = process.env.LAMBDA_TASK_ROOT || process.cwd();
 const bundledDbPath = path.resolve(baseDir, 'data.db');
 const writableDbPath = isNetlify ? path.join('/tmp', 'data.db') : bundledDbPath;
@@ -31,16 +33,21 @@ if (isNetlify && !fs.existsSync(writableDbPath)) {
     }
   } else {
     console.log('Bundled DB not found at primary path, checking alt...');
-    const altPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../data.db');
-    if (fs.existsSync(altPath)) {
-      try {
+    try {
+      // Safer path resolution that handles missing import.meta.url
+      const currentDir = typeof __dirname !== 'undefined' 
+        ? __dirname 
+        : path.dirname(fileURLToPath(import.meta.url));
+      const altPath = path.resolve(currentDir, '../../data.db');
+      
+      if (fs.existsSync(altPath)) {
         fs.copyFileSync(altPath, writableDbPath);
         console.log('Copied bundled DB from alt path to /tmp');
-      } catch (err) {
-        console.error('Failed to copy database from alt path to /tmp:', err);
+      } else {
+        console.error('Could not find bundled data.db anywhere!');
       }
-    } else {
-      console.error('Could not find bundled data.db anywhere!');
+    } catch (pathErr) {
+      console.error('Error resolving alt database path:', pathErr);
     }
   }
 }
