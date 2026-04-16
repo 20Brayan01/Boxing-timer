@@ -5,6 +5,33 @@ export interface RoundInstruction {
   instruction: string;
 }
 
+export type ExerciseType = 'reps' | 'time';
+
+export interface ExerciseAlternative {
+  name: string;
+  mediaUrl?: string;
+  repsOrDuration?: number;
+}
+
+export interface Exercise {
+  id: string;
+  name: string;
+  type: ExerciseType;
+  setsOrRounds: number;
+  repsOrDuration: number;
+  restBetweenSets: number;
+  mediaUrl?: string;
+  alternatives: ExerciseAlternative[];
+}
+
+export interface WorkoutSection {
+  id: string;
+  name: string;
+  repeatCount: number;
+  restBetweenRounds: number;
+  exercises: Exercise[];
+}
+
 export interface Workout {
   id: string;
   name: string;
@@ -12,13 +39,15 @@ export interface Workout {
   rounds: number;
   fightTime: number;
   restTime: number;
-  category: 'Stamina' | 'Technique' | 'Power' | 'Speed';
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced' | 'Pro';
+  category: string;
+  difficulty: string;
   completions: number;
   rating: number;
   isPremium: boolean;
   gifUrl: string;
   instructions: RoundInstruction[];
+  sections: WorkoutSection[];
+  totalDuration?: number;
 }
 
 export interface Plan {

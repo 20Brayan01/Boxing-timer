@@ -242,7 +242,10 @@ app.post('/api/subscription/verify', authenticate, async (req: any, res) => {
 // Workouts & Plans
 app.get('/api/workouts', (req, res) => {
   const workouts = db.prepare('SELECT * FROM workouts').all() as any[];
-  workouts.forEach(w => w.instructions = JSON.parse(w.instructions));
+  workouts.forEach(w => {
+    w.instructions = JSON.parse(w.instructions || '[]');
+    w.sections = w.complex_structure ? JSON.parse(w.complex_structure) : [];
+  });
   res.json(workouts);
 });
 
@@ -288,13 +291,14 @@ app.post('/api/admin/workouts', authenticate, isAdmin, (req, res) => {
   const workout = req.body;
   try {
     db.prepare(`
-      INSERT OR REPLACE INTO workouts (id, name, description, rounds, fight_time, rest_time, category, difficulty, is_premium, gif_url, instructions)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT OR REPLACE INTO workouts (id, name, description, rounds, fight_time, rest_time, category, difficulty, is_premium, gif_url, instructions, complex_structure)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       workout.id, workout.name, workout.description, workout.rounds, 
       workout.fight_time, workout.rest_time, workout.category, 
       workout.difficulty, workout.is_premium ? 1 : 0, workout.gif_url, 
-      JSON.stringify(workout.instructions)
+      JSON.stringify(workout.instructions || []),
+      workout.sections ? JSON.stringify(workout.sections) : null
     );
     res.json({ success: true });
   } catch (error: any) {
@@ -338,6 +342,28 @@ app.get('/api/admin/backup', authenticate, isAdmin, (req, res) => {
   } catch (error: any) {
     res.status(500).json({ error: 'Backup failed: ' + error.message });
   }
+});
+
+// Documentation API
+app.get('/api/docs', (req, res) => {
+  res.json({
+    total_apis: 13,
+    endpoints: [
+      { path: '/api/health', method: 'GET', description: 'Health check' },
+      { path: '/api/workouts', method: 'GET', description: 'Get all workouts' },
+      { path: '/api/plans', method: 'GET', description: 'Get all plans' },
+      { path: '/api/auth/signup', method: 'POST', description: 'User signup' },
+      { path: '/api/auth/login', method: 'POST', description: 'User login' },
+      { path: '/api/auth/me', method: 'GET', description: 'Get current user profile', auth: true },
+      { path: '/api/create-checkout-session', method: 'POST', description: 'Create Stripe session', auth: true },
+      { path: '/api/subscription/verify', method: 'POST', description: 'Verify payment', auth: true },
+      { path: '/api/admin/stats', method: 'GET', description: 'Admin dashboard stats', auth: true, admin: true },
+      { path: '/api/admin/users', method: 'GET', description: 'List all users', auth: true, admin: true },
+      { path: '/api/admin/workouts', method: 'POST', description: 'Save workout', auth: true, admin: true },
+      { path: '/api/admin/workouts/:id', method: 'DELETE', description: 'Delete workout', auth: true, admin: true },
+      { path: '/api/admin/backup', method: 'GET', description: 'Download DB backup', auth: true, admin: true }
+    ]
+  });
 });
 
 // Health check

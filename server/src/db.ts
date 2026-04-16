@@ -116,7 +116,8 @@ db.exec(`
     rating REAL DEFAULT 0.0,
     is_premium BOOLEAN DEFAULT 0,
     gif_url TEXT,
-    instructions TEXT -- JSON string
+    instructions TEXT, -- JSON string for legacy support
+    complex_structure TEXT -- New JSON string for the Workout Builder
   );
 
   CREATE TABLE IF NOT EXISTS plans (

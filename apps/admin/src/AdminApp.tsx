@@ -10,7 +10,8 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer, AreaChart, Area 
 } from 'recharts';
-import { User, Workout, Plan } from '../../../packages/shared/types';
+import { User, Plan, Workout } from '../../../packages/shared/types';
+import WorkoutBuilder from './components/WorkoutBuilder';
 
 export default function AdminApp() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('admin_token'));
@@ -612,6 +613,14 @@ export default function AdminApp() {
                   className="w-5 h-5 rounded bg-zinc-950 border-white/10 text-emerald-500"
                 />
                 <label htmlFor="is_premium" className="text-sm font-bold text-white uppercase">Premium Workout</label>
+              </div>
+
+              <div className="pt-6 border-t border-white/10">
+                <h4 className="text-sm font-bold text-zinc-500 uppercase mb-6">Workout Structure</h4>
+                <WorkoutBuilder 
+                  workout={editingWorkout} 
+                  onChange={(updates) => setEditingWorkout({ ...editingWorkout, ...updates })} 
+                />
               </div>
             </div>
 

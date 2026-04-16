@@ -14,480 +14,13 @@ import {
   Crown, CheckCircle2, Sparkles, LayoutDashboard
 } from 'lucide-react';
 import { TimerState, Workout, User as SharedUser } from '../../../packages/shared/types';
+import WorkoutPlayer from './components/WorkoutPlayer';
 
 type Tab = 'home' | 'workouts' | 'profile';
 type View = 'tabs' | 'setup' | 'timer' | 'workout-detail';
 
 
-const WORKOUTS: Workout[] = [
-  {
-    id: '1',
-    name: 'The 12 Jabs',
-    description: 'Master the most important punch in boxing. Focus on snap and precision.',
-    rounds: 6,
-    fightTime: 180,
-    restTime: 60,
-    category: 'Technique',
-    difficulty: 'Beginner',
-    completions: 1240,
-    rating: 4.8,
-    isPremium: false,
-    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
-    instructions: [
-      { round: 1, instruction: 'Double Jab: Focus on the second jab snap.' },
-      { round: 2, instruction: 'Jab to Body: Change levels, keep eyes up.' },
-      { round: 3, instruction: 'Jab-Cross: Basic 1-2 combo.' },
-      { round: 4, instruction: 'Step-in Jab: Close the distance.' },
-      { round: 5, instruction: 'Counter Jab: Slip and return.' },
-      { round: 6, instruction: 'Speed Jabs: Maximum volume.' },
-    ]
-  },
-  {
-    id: '2',
-    name: 'Heavy Bag Blast',
-    description: 'High intensity interval training on the heavy bag.',
-    rounds: 8,
-    fightTime: 120,
-    restTime: 30,
-    category: 'Stamina',
-    difficulty: 'Intermediate',
-    completions: 850,
-    rating: 4.5,
-    isPremium: false,
-    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/l0HlT6fS6S6S6S6S6/giphy.gif',
-    instructions: [
-      { round: 1, instruction: 'Warmup: Light punches, move around the bag.' },
-      { round: 2, instruction: 'Power Hooks: Focus on hip rotation.' },
-      { round: 3, instruction: 'Straight Punches: 1-2-1-2 non-stop.' },
-      { round: 4, instruction: 'Body-Head: Upstairs, downstairs.' },
-      { round: 5, instruction: 'Defense: Punch, slip, punch.' },
-      { round: 6, instruction: 'Intervals: 10s hard, 10s light.' },
-      { round: 7, instruction: 'Uppercuts: Close range power.' },
-      { round: 8, instruction: 'Burnout: Everything you have left.' },
-    ]
-  },
-  {
-    id: '3',
-    name: 'Monkey Squad Elite',
-    description: 'Advanced Wu-Gong boxing drills for professional fighters.',
-    rounds: 12,
-    fightTime: 180,
-    restTime: 60,
-    category: 'Power',
-    difficulty: 'Pro',
-    completions: 320,
-    rating: 4.9,
-    isPremium: true,
-    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
-    instructions: [
-      { round: 1, instruction: 'Wu-Gong Stance: Perfect balance and weight distribution.' },
-      { round: 2, instruction: 'Monkey Slip: Fluid head movement.' },
-      { round: 3, instruction: 'Explosive Entry: Burst through the guard.' },
-      { round: 4, instruction: 'Pivot Power: Generate force from the ground.' },
-      { round: 5, instruction: 'Triple Threat: Jab, hook, uppercut.' },
-      { round: 6, instruction: 'Active Recovery: Move and breathe.' },
-      { round: 7, instruction: 'Counter Mastery: Bait and punish.' },
-      { round: 8, instruction: 'Pressure: Constant forward motion.' },
-      { round: 9, instruction: 'Angle Attack: Never stay on the line.' },
-      { round: 10, instruction: 'Body Snatcher: Dig deep into the midsection.' },
-      { round: 11, instruction: 'Championship Rounds: Push through the wall.' },
-      { round: 12, instruction: 'Final Stand: Empty the tank.' },
-    ]
-  },
-  {
-    id: '4',
-    name: 'Speed Demon',
-    description: 'Focus on hand speed and fast twitch muscle activation.',
-    rounds: 10,
-    fightTime: 90,
-    restTime: 45,
-    category: 'Speed',
-    difficulty: 'Advanced',
-    completions: 540,
-    rating: 4.7,
-    isPremium: true,
-    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
-    instructions: [
-      { round: 1, instruction: 'Fast Jabs: 100 jabs as fast as possible.' },
-      { round: 2, instruction: 'Shoeshine: Rapid uppercuts inside.' },
-      { round: 3, instruction: '1-2-3-4: Straight punch flurries.' },
-      { round: 4, instruction: 'Head Movement: Slip, slip, roll, roll.' },
-      { round: 5, instruction: 'Double Hooks: Lead hook, rear hook speed.' },
-      { round: 6, instruction: 'Step-back Counters: Quick retreat and fire.' },
-      { round: 7, instruction: 'Volume Jabs: Non-stop lead hand.' },
-      { round: 8, instruction: 'Power-Speed Mix: 1 hard, 3 fast.' },
-      { round: 9, instruction: 'Reflex Drills: React to the imaginary bag.' },
-      { round: 10, instruction: 'Sprint Finish: Max speed till the bell.' },
-    ]
-  },
-  {
-    id: '5',
-    name: 'Iron Chin Defense',
-    description: 'Defensive fundamentals. Blocking, parrying, and rolling.',
-    rounds: 6,
-    fightTime: 180,
-    restTime: 60,
-    category: 'Technique',
-    difficulty: 'Beginner',
-    completions: 2100,
-    rating: 4.6,
-    isPremium: true,
-    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/l0HlT6fS6S6S6S6S6/giphy.gif',
-    instructions: [
-      { round: 1, instruction: 'High Guard: Keep elbows in, chin down.' },
-      { round: 2, instruction: 'Parrying Jabs: Catch and return.' },
-      { round: 3, instruction: 'Shoulder Roll: Deflect the cross.' },
-      { round: 4, instruction: 'Catching Hooks: Tighten the guard.' },
-      { round: 5, instruction: 'Bob and Weave: Under the hooks.' },
-      { round: 6, instruction: 'Full Defense: Mix all techniques.' },
-    ]
-  },
-  {
-    id: '6',
-    name: 'Southpaw Slayer',
-    description: 'Tactics for fighting an opposite stance opponent.',
-    rounds: 8,
-    fightTime: 180,
-    restTime: 60,
-    category: 'Technique',
-    difficulty: 'Intermediate',
-    completions: 430,
-    rating: 4.8,
-    isPremium: true,
-    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
-    instructions: [
-      { round: 1, instruction: 'Lead Foot Battle: Step outside the lead foot.' },
-      { round: 2, instruction: 'The Straight Right: Fire down the pipe.' },
-      { round: 3, instruction: 'Lead Hook: Over the southpaw jab.' },
-      { round: 4, instruction: 'Body Cross: Target the open side.' },
-      { round: 5, instruction: 'Circling Right: Stay away from the power.' },
-      { round: 6, instruction: 'Double Jab: Blind the opponent.' },
-      { round: 7, instruction: 'Counter Left: Slip outside and fire.' },
-      { round: 8, instruction: 'Aggressive Pressure: Don\'t let them set.' },
-    ]
-  },
-  {
-    id: '7',
-    name: 'Endurance Engine',
-    description: 'Long rounds to build championship-level stamina.',
-    rounds: 4,
-    fightTime: 300,
-    restTime: 30,
-    category: 'Stamina',
-    difficulty: 'Advanced',
-    completions: 670,
-    rating: 4.9,
-    isPremium: true,
-    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/l0HlT6fS6S6S6S6S6/giphy.gif',
-    instructions: [
-      { round: 1, instruction: 'Steady Pace: 60% effort, constant movement.' },
-      { round: 2, instruction: 'Active Rest: Punch light, don\'t stop.' },
-      { round: 3, instruction: 'Building Heat: Increase volume every minute.' },
-      { round: 4, instruction: 'The Wall: Push through the fatigue.' },
-    ]
-  },
-  {
-    id: '8',
-    name: 'Power Puncher',
-    description: 'Focus on weight transfer and kinetic linking for max power.',
-    rounds: 6,
-    fightTime: 120,
-    restTime: 90,
-    category: 'Power',
-    difficulty: 'Intermediate',
-    completions: 920,
-    rating: 4.7,
-    isPremium: true,
-    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
-    instructions: [
-      { round: 1, instruction: 'Grounding: Feel the floor, sit on your punches.' },
-      { round: 2, instruction: 'Rear Cross: Full hip rotation.' },
-      { round: 3, instruction: 'Lead Hook: Pivot the lead foot 90 degrees.' },
-      { round: 4, instruction: 'Overhand Right: Loop it over the guard.' },
-      { round: 5, instruction: 'Body Hooks: Sink your weight into the bag.' },
-      { round: 6, instruction: 'Power Combos: 1-2-3 with bad intentions.' },
-    ]
-  },
-  {
-    id: '9',
-    name: 'Shadow Warrior',
-    description: 'Pure shadowboxing. Focus on visualization and form.',
-    rounds: 5,
-    fightTime: 180,
-    restTime: 60,
-    category: 'Technique',
-    difficulty: 'Beginner',
-    completions: 3400,
-    rating: 4.5,
-    isPremium: true,
-    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
-    instructions: [
-      { round: 1, instruction: 'Footwork only: Hands up, move in all directions.' },
-      { round: 2, instruction: 'Straight punches: Focus on extension.' },
-      { round: 3, instruction: 'Head movement: Slip after every combo.' },
-      { round: 4, instruction: 'Imaginary Opponent: React to their punches.' },
-      { round: 5, instruction: 'Full Flow: Mix everything together.' },
-    ]
-  },
-  {
-    id: '10',
-    name: 'The Clinch Master',
-    description: 'Inside fighting and clinch work drills.',
-    rounds: 6,
-    fightTime: 180,
-    restTime: 60,
-    category: 'Technique',
-    difficulty: 'Advanced',
-    completions: 280,
-    rating: 4.8,
-    isPremium: true,
-    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/l0HlT6fS6S6S6S6S6/giphy.gif',
-    instructions: [
-      { round: 1, instruction: 'Closing the Distance: Head down, high guard.' },
-      { round: 2, instruction: 'Underhooks: Control the opponent\'s arms.' },
-      { round: 3, instruction: 'Short Uppercuts: Dig inside.' },
-      { round: 4, instruction: 'Turning the Opponent: Use your weight.' },
-      { round: 5, instruction: 'Dirty Boxing: Punch on the break.' },
-      { round: 6, instruction: 'Inside Survival: Keep your chin tucked.' },
-    ]
-  },
-  {
-    id: '11',
-    name: 'Counter-Punching 101',
-    description: 'Learn to bait and punish. Timing over speed.',
-    rounds: 8,
-    fightTime: 120,
-    restTime: 60,
-    category: 'Technique',
-    difficulty: 'Intermediate',
-    completions: 1100,
-    rating: 4.7,
-    isPremium: true,
-    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
-    instructions: [
-      { round: 1, instruction: 'Slip Jab: Return your own jab.' },
-      { round: 2, instruction: 'Pull Counter: Lean back and fire the cross.' },
-      { round: 3, instruction: 'Catch and Shoot: Block the hook, return the hook.' },
-      { round: 4, instruction: 'Duck and Counter: Under the hook, fire the cross.' },
-      { round: 5, instruction: 'Step-out Counter: Reset and fire.' },
-      { round: 6, instruction: 'Baiting: Leave a small opening.' },
-      { round: 7, instruction: 'Check Hook: Pivot as they charge.' },
-      { round: 8, instruction: 'Reactive Combinations: 3-punch counters.' },
-    ]
-  },
-  {
-    id: '12',
-    name: 'Body Blow Burnout',
-    description: 'Targeting the midsection for maximum damage.',
-    rounds: 6,
-    fightTime: 150,
-    restTime: 45,
-    category: 'Power',
-    difficulty: 'Intermediate',
-    completions: 890,
-    rating: 4.6,
-    isPremium: true,
-    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/l0HlT6fS6S6S6S6S6/giphy.gif',
-    instructions: [
-      { round: 1, instruction: 'Jab to Body: Change levels quickly.' },
-      { round: 2, instruction: 'Lead Hook to Liver: Dig deep.' },
-      { round: 3, instruction: 'Rear Hook to Spleen: Power shot.' },
-      { round: 4, instruction: 'Straight Right to Solar Plexus.' },
-      { round: 5, instruction: 'Head-Body Mix: Upstairs, downstairs.' },
-      { round: 6, instruction: 'Body Flurries: Non-stop hooks.' },
-    ]
-  },
-  {
-    id: '13',
-    name: 'The Peek-a-Boo Flow',
-    description: 'Mike Tyson style head movement and explosive entries.',
-    rounds: 10,
-    fightTime: 120,
-    restTime: 60,
-    category: 'Speed',
-    difficulty: 'Pro',
-    completions: 150,
-    rating: 4.9,
-    isPremium: true,
-    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
-    instructions: [
-      { round: 1, instruction: 'The Pendulum: Constant side-to-side movement.' },
-      { round: 2, instruction: 'Explosive Entry: Leap in with the hook.' },
-      { round: 3, instruction: 'Double Roll: Under two hooks.' },
-      { round: 4, instruction: 'Uppercut-Hook: The classic Tyson combo.' },
-      { round: 5, instruction: 'Body-Head Hooks: Fast transitions.' },
-      { round: 6, instruction: 'Shifting: Change stance while punching.' },
-      { round: 7, instruction: 'Pressure: Never stop moving forward.' },
-      { round: 8, instruction: 'Head Movement Mix: Slip, roll, weave.' },
-      { round: 9, instruction: 'Power Flurries: 5-6 punch bursts.' },
-      { round: 10, instruction: 'Final Burn: Max intensity.' },
-    ]
-  },
-  {
-    id: '14',
-    name: 'Footwork Fundamentals',
-    description: 'Balance is everything. Drills to keep you on your toes.',
-    rounds: 5,
-    fightTime: 180,
-    restTime: 60,
-    category: 'Technique',
-    difficulty: 'Beginner',
-    completions: 1500,
-    rating: 4.4,
-    isPremium: true,
-    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
-    instructions: [
-      { round: 1, instruction: 'Step and Slide: Forward, back, left, right.' },
-      { round: 2, instruction: 'The Pivot: 45 and 90 degree turns.' },
-      { round: 3, instruction: 'Circle Left: Stay on the outside.' },
-      { round: 4, instruction: 'Circle Right: Controlled movement.' },
-      { round: 5, instruction: 'In and Out: Close distance and retreat.' },
-    ]
-  },
-  {
-    id: '15',
-    name: 'The Wu-Gong Flow',
-    description: 'Rhythmic boxing inspired by traditional martial arts.',
-    rounds: 8,
-    fightTime: 180,
-    restTime: 30,
-    category: 'Technique',
-    difficulty: 'Advanced',
-    completions: 310,
-    rating: 4.8,
-    isPremium: true,
-    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
-    instructions: [
-      { round: 1, instruction: 'Breathing: Sync breath with every punch.' },
-      { round: 2, instruction: 'Circular Blocks: Deflect and return.' },
-      { round: 3, instruction: 'The Whip Jab: Relaxed arm, explosive snap.' },
-      { round: 4, instruction: 'Flowing Combos: 1-2-3-2-1 sequence.' },
-      { round: 5, instruction: 'Animal Stances: Low and high transitions.' },
-      { round: 6, instruction: 'Hidden Punches: Fire from the hip.' },
-      { round: 7, instruction: 'Rhythmic Defense: Move with the beat.' },
-      { round: 8, instruction: 'Zen Boxing: Calm mind, fast hands.' },
-    ]
-  },
-  {
-    id: '16',
-    name: 'Heavy Bag Power Endurance',
-    description: 'Hard punches for the full duration of the round.',
-    rounds: 6,
-    fightTime: 180,
-    restTime: 60,
-    category: 'Stamina',
-    difficulty: 'Advanced',
-    completions: 420,
-    rating: 4.7,
-    isPremium: true,
-    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/l0HlT6fS6S6S6S6S6/giphy.gif',
-    instructions: [
-      { round: 1, instruction: 'Power Jabs: Snap the bag back.' },
-      { round: 2, instruction: '1-2 Power: Every shot at 90%.' },
-      { round: 3, instruction: 'Hook Flurries: Don\'t let the bag stop moving.' },
-      { round: 4, instruction: 'Body-Head Power: Change levels with force.' },
-      { round: 5, instruction: 'Inside Power: Short, explosive shots.' },
-      { round: 6, instruction: 'The Finish: Max power till the end.' },
-    ]
-  },
-  {
-    id: '17',
-    name: 'Reflex & Reaction',
-    description: 'Improve your eyes and reaction time.',
-    rounds: 6,
-    fightTime: 120,
-    restTime: 60,
-    category: 'Speed',
-    difficulty: 'Intermediate',
-    completions: 780,
-    rating: 4.6,
-    isPremium: true,
-    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
-    instructions: [
-      { round: 1, instruction: 'Reactive Jabs: Fire when you see an opening.' },
-      { round: 2, instruction: 'Slip-Counter: React to imaginary shots.' },
-      { round: 3, instruction: 'Double-End Bag Style: Fast, light touches.' },
-      { round: 4, instruction: 'Head Movement Flow: Never be a stationary target.' },
-      { round: 5, instruction: 'Counter Flurries: 3 punches for every 1.' },
-      { round: 6, instruction: 'Max Speed Reaction: Sprint rounds.' },
-    ]
-  },
-  {
-    id: '18',
-    name: 'The Ring General',
-    description: 'Controlling the space and pace of the fight.',
-    rounds: 8,
-    fightTime: 180,
-    restTime: 60,
-    category: 'Technique',
-    difficulty: 'Advanced',
-    completions: 390,
-    rating: 4.8,
-    isPremium: true,
-    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
-    instructions: [
-      { round: 1, instruction: 'Center Control: Own the middle of the ring.' },
-      { round: 2, instruction: 'Cutting the Ring: Step across their path.' },
-      { round: 3, instruction: 'The Long Jab: Keep them at bay.' },
-      { round: 4, instruction: 'Feinting: Make them react to nothing.' },
-      { round: 5, instruction: 'Trapping: Corner the imaginary opponent.' },
-      { round: 6, instruction: 'Lateral Movement: Side to side control.' },
-      { round: 7, instruction: 'Pace Control: Slow it down, then speed it up.' },
-      { round: 8, instruction: 'Full Ring Mastery: Mix all tactics.' },
-    ]
-  },
-  {
-    id: '19',
-    name: 'Beginner Boxing Basics',
-    description: 'The foundation of everything. Stance and basic punches.',
-    rounds: 4,
-    fightTime: 180,
-    restTime: 90,
-    category: 'Technique',
-    difficulty: 'Beginner',
-    completions: 5600,
-    rating: 4.3,
-    isPremium: true,
-    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/l0HlT6fS6S6S6S6S6/giphy.gif',
-    instructions: [
-      { round: 1, instruction: 'Stance Check: Feet shoulder width, hands up.' },
-      { round: 2, instruction: 'The Jab: Straight out, straight back.' },
-      { round: 3, instruction: 'The Cross: Pivot the back foot.' },
-      { round: 4, instruction: '1-2 Combo: Jab then Cross.' },
-    ]
-  },
-  {
-    id: '20',
-    name: 'Wu-Gong Grandmaster',
-    description: 'The ultimate test of skill, power, and endurance.',
-    rounds: 15,
-    fightTime: 180,
-    restTime: 30,
-    category: 'Power',
-    difficulty: 'Pro',
-    completions: 45,
-    rating: 5.0,
-    isPremium: true,
-    gifUrl: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZ3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKv6eSgY6o/giphy.gif',
-    instructions: [
-      { round: 1, instruction: 'Meditation in Motion: Perfect form.' },
-      { round: 2, instruction: 'The Monkey Jab: Rhythmic entries.' },
-      { round: 3, instruction: 'Iron Guard: Unbreakable defense.' },
-      { round: 4, instruction: 'Explosive Bursts: 10s max effort.' },
-      { round: 5, instruction: 'Body Snatching: Inside power.' },
-      { round: 6, instruction: 'Slip and Counter: Precision timing.' },
-      { round: 7, instruction: 'Triple Hooks: Speed and power.' },
-      { round: 8, instruction: 'The Wu-Gong Step: Advanced footwork.' },
-      { round: 9, instruction: 'Pressure Boxing: No room to breathe.' },
-      { round: 10, instruction: 'Counter-Punching: Punish every mistake.' },
-      { round: 11, instruction: 'Championship Rounds: Heart over fatigue.' },
-      { round: 12, instruction: 'The Wall: Push through.' },
-      { round: 13, instruction: 'Final Technique: Mastery of form.' },
-      { round: 14, instruction: 'Final Power: Every shot counts.' },
-      { round: 15, instruction: 'The Grandmaster: Everything you have.' },
-    ]
-  }
-];
+const WORKOUTS: Workout[] = [];
 
 interface Config {
   rounds: number;
@@ -548,6 +81,16 @@ export default function App() {
   const audioContextRef = useRef<AudioContext | null>(null);
 
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [isPlayingWorkout, setIsPlayingWorkout] = useState(false);
+
+  // Fetch workouts
+  useEffect(() => {
+    fetch('/api/workouts')
+      .then(res => res.json())
+      .then(data => setWorkouts(data))
+      .catch(err => console.error('Failed to fetch workouts:', err));
+  }, []);
 
   // Auto-hide splash screen
   useEffect(() => {
@@ -1381,7 +924,7 @@ export default function App() {
                     </div>
                     
                     <div className="grid gap-4">
-                      {WORKOUTS.filter(w => {
+                      {workouts.filter(w => {
                         const catMatch = selectedCategories.length === 0 || selectedCategories.includes(w.category);
                         const diffMatch = selectedDifficulties.length === 0 || selectedDifficulties.includes(w.difficulty);
                         return catMatch && diffMatch;
@@ -1739,13 +1282,17 @@ export default function App() {
 
               <button
                 onClick={() => {
-                  setConfig({
-                    rounds: selectedWorkout.rounds,
-                    fightTime: selectedWorkout.fightTime,
-                    restTime: selectedWorkout.restTime,
-                    warmupTime: 10
-                  });
-                  startTraining();
+                  if (selectedWorkout.sections && selectedWorkout.sections.length > 0) {
+                    setIsPlayingWorkout(true);
+                  } else {
+                    setConfig({
+                      rounds: selectedWorkout.rounds,
+                      fightTime: selectedWorkout.fightTime,
+                      restTime: selectedWorkout.restTime,
+                      warmupTime: 10
+                    });
+                    startTraining();
+                  }
                 }}
                 className={`w-full py-5 font-bold rounded-2xl shadow-xl active:scale-95 transition-transform flex items-center justify-center gap-3 ${
                   isDarkMode ? 'bg-white text-black shadow-white/5' : 'bg-black text-white shadow-black/10'
@@ -2428,6 +1975,18 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
+      
+      {/* Workout Player Overlay */}
+      {isPlayingWorkout && selectedWorkout && (
+        <WorkoutPlayer 
+          workout={selectedWorkout}
+          onClose={() => setIsPlayingWorkout(false)}
+          onComplete={() => {
+            setIsPlayingWorkout(false);
+            setShowRating(true);
+          }}
+        />
+      )}
         </div>
       } />
     </Routes>
