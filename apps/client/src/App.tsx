@@ -68,6 +68,7 @@ export default function App() {
   const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
   const [showRating, setShowRating] = useState(false);
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+  const [setupTab, setSetupTab] = useState<'quick' | 'advanced'>('quick');
   const [showWorkoutOverlay, setShowWorkoutOverlay] = useState(false);
   const [rating, setRating] = useState(0);
   
@@ -914,23 +915,13 @@ export default function App() {
                           {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
                         </button>
                         
-                        {!isActive && (
-                          <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2">
                              <button 
-                              onClick={() => setShowAdvancedSettings(true)}
-                              title="Training Gear (Alerts, Sounds, Intervals)"
-                              className={`p-3 rounded-2xl transition-all active:scale-90 ${
-                                isDarkMode 
-                                  ? 'glass-card glass-card-hover bg-zinc-800/50 text-white/70' 
-                                  : 'bg-slate-100 text-slate-500 border border-slate-200 shadow-sm hover:bg-slate-200'
-                              }`}
-                            >
-                              <Sliders size={20} />
-                            </button>
-                            
-                            <button 
-                              onClick={() => setCurrentView('setup')}
-                              title="Session Setup (Rounds, Times)"
+                              onClick={() => {
+                                setSetupTab('quick');
+                                setCurrentView('setup');
+                              }}
+                              title="Training Settings"
                               className={`p-3 rounded-2xl transition-all active:scale-90 ${
                                 isDarkMode 
                                   ? 'glass-card glass-card-hover bg-warmup/10 border-warmup/20 text-warmup' 
@@ -940,7 +931,6 @@ export default function App() {
                               <Settings size={20} />
                             </button>
                           </div>
-                        )}
                       </div>
                     </div>
 
@@ -1683,185 +1673,214 @@ export default function App() {
             exit={{ opacity: 0, x: -100 }}
             className="flex-1 flex flex-col h-full overflow-hidden"
           >
-            <header className="p-6 flex items-center justify-between z-10">
-              <div className="flex items-center gap-4">
-                <button 
-                  onClick={() => setCurrentView('tabs')}
-                  className={`p-3 rounded-2xl transition-all active:scale-90 ${
-                    isDarkMode 
-                      ? 'glass-card glass-card-hover' 
-                      : 'bg-white border border-slate-200 shadow-sm hover:bg-slate-50'
+            <header className="p-6 flex flex-col gap-6 z-10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <button 
+                    onClick={() => setCurrentView('tabs')}
+                    className={`p-3 rounded-2xl transition-all active:scale-90 ${
+                      isDarkMode 
+                        ? 'glass-card glass-card-hover' 
+                        : 'bg-white border border-slate-200 shadow-sm hover:bg-slate-50'
+                    }`}
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <h2 className="text-2xl font-display font-black italic tracking-tight uppercase">Session Gear</h2>
+                </div>
+              </div>
+
+              {/* Settings Tabs */}
+              <div className={`p-1 rounded-2xl flex items-center gap-1 ${isDarkMode ? 'bg-white/5' : 'bg-slate-100'}`}>
+                <button
+                  onClick={() => setSetupTab('quick')}
+                  className={`flex-1 py-3 rounded-[14px] text-[10px] font-black uppercase tracking-widest transition-all ${
+                    setupTab === 'quick'
+                      ? (isDarkMode ? 'bg-warmup text-white shadow-lg shadow-warmup/20' : 'bg-white text-warmup shadow-sm')
+                      : 'opacity-40 hover:opacity-60'
                   }`}
                 >
-                  <ChevronLeft size={20} />
+                  Quick Setup
                 </button>
-                <h2 className="text-2xl font-display font-black italic tracking-tight uppercase">Quick Setup</h2>
+                <button
+                  onClick={() => setSetupTab('advanced')}
+                  className={`flex-1 py-3 rounded-[14px] text-[10px] font-black uppercase tracking-widest transition-all ${
+                    setupTab === 'advanced'
+                      ? (isDarkMode ? 'bg-warmup text-white shadow-lg shadow-warmup/20' : 'bg-white text-warmup shadow-sm')
+                      : 'opacity-40 hover:opacity-60'
+                  }`}
+                >
+                  Advanced Gear
+                </button>
               </div>
             </header>
 
             <div className="flex-1 overflow-y-auto p-6 pb-32 custom-scrollbar">
-              {/* Core Settings - Minimal & Fast */}
-              <div className="space-y-6 pt-4">
-                <div className={`p-8 rounded-[40px] border relative overflow-hidden ${
-                  isDarkMode ? 'glass-card border-white/5 bg-warmup/5' : 'bg-white border-slate-200 shadow-sm'
-                }`}>
-                  <div className="absolute -right-12 -top-12 opacity-5 rotate-12">
-                    <Zap size={200} className="text-warmup" />
-                  </div>
+              <AnimatePresence mode="wait">
+                {setupTab === 'quick' ? (
+                  <motion.div
+                    key="quick"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="space-y-6"
+                  >
+                    {/* Core Settings - Minimal & Fast */}
+                    <div className="space-y-6 pt-4">
+                      <div className={`p-8 rounded-[40px] border relative overflow-hidden ${
+                        isDarkMode ? 'glass-card border-white/5 bg-warmup/5' : 'bg-white border-slate-200 shadow-sm'
+                      }`}>
+                        <div className="absolute -right-12 -top-12 opacity-5 rotate-12">
+                          <Zap size={200} className="text-warmup" />
+                        </div>
 
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-3 mb-8">
-                      <div className="w-12 h-12 rounded-2xl bg-warmup/20 flex items-center justify-center text-warmup">
-                        <Play size={24} fill="currentColor" className="ml-1" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-display font-black italic uppercase tracking-tight">Ready to Work?</h3>
-                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Dial in your core stats</p>
+                        <div className="relative z-10">
+                          <div className="flex items-center gap-3 mb-8">
+                            <div className="w-12 h-12 rounded-2xl bg-warmup/20 flex items-center justify-center text-warmup">
+                              <Play size={24} fill="currentColor" className="ml-1" />
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-display font-black italic uppercase tracking-tight">Ready to Work?</h3>
+                              <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Dial in your core stats</p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-6">
+                            {[
+                              { label: "Rounds", value: config.rounds, min: 1, onChange: (v: number) => setConfig(prev => ({ ...prev, rounds: Math.max(1, v) })) },
+                              { label: "Fight Time", value: config.fightTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, fightTime: Math.max(0, v) })) },
+                              { label: "Rest Time", value: config.restTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, restTime: Math.max(0, v) })) },
+                              { label: "Warmup", value: config.warmupTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, warmupTime: Math.max(0, v) })) },
+                            ].map((item, idx) => (
+                              <motion.div
+                                key={item.label}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: idx * 0.1 }}
+                              >
+                                <ConfigStepper 
+                                  label={item.label} 
+                                  value={item.value} 
+                                  isTime={item.isTime}
+                                  onChange={item.onChange}
+                                  isDarkMode={isDarkMode}
+                                />
+                              </motion.div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="space-y-6">
-                      {[
-                        { label: "Rounds", value: config.rounds, min: 1, onChange: (v: number) => setConfig(prev => ({ ...prev, rounds: Math.max(1, v) })) },
-                        { label: "Fight Time", value: config.fightTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, fightTime: Math.max(0, v) })) },
-                        { label: "Rest Time", value: config.restTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, restTime: Math.max(0, v) })) },
-                        { label: "Warmup", value: config.warmupTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, warmupTime: Math.max(0, v) })) },
-                      ].map((item, idx) => (
-                        <motion.div
-                          key={item.label}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: idx * 0.1 }}
-                        >
-                          <ConfigStepper 
-                            label={item.label} 
-                            value={item.value} 
-                            isTime={item.isTime}
-                            onChange={item.onChange}
-                            isDarkMode={isDarkMode}
-                          />
-                        </motion.div>
-                      ))}
+                    <button
+                      onClick={() => {
+                        if (timerState === 'IDLE') {
+                          setSelectedWorkout(null);
+                          startTraining();
+                        } else {
+                          setCurrentView('tabs');
+                        }
+                      }}
+                      disabled={timerState === 'IDLE' && config.warmupTime === 0 && config.fightTime === 0 && config.restTime === 0}
+                      className={`w-full py-7 font-display text-xl font-black italic uppercase tracking-widest rounded-[32px] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-4 mt-8 disabled:opacity-30 disabled:pointer-events-none ${
+                        isDarkMode ? 'bg-warmup text-white shadow-warmup/20' : 'bg-black text-white shadow-black/10'
+                      }`}
+                    >
+                      {timerState === 'IDLE' ? (
+                        <>
+                          <Play size={20} fill="currentColor" />
+                          Jump In the Cage
+                        </>
+                      ) : (
+                        <>
+                          <Clock size={20} />
+                          Resume Training
+                        </>
+                      )}
+                    </button>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="advanced"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="space-y-8"
+                  >
+                    <div className={`p-10 rounded-[48px] border overflow-hidden ${
+                      isDarkMode ? 'glass-card border-white/5 bg-zinc-900/40' : 'bg-white border-slate-200 shadow-sm'
+                    }`}>
+                      <div className="space-y-8">
+                        {/* Advanced Phases */}
+                        <div className="space-y-4">
+                          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 italic">Tuning & Alerts</h4>
+                          {[
+                            { label: "Warning", value: config.warningTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, warningTime: Math.max(0, v) })) },
+                            { label: "Intervals", value: config.intervalTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, intervalTime: Math.max(0, v) })) },
+                          ].map((item) => (
+                            <ConfigStepper 
+                              key={item.label}
+                              label={item.label} 
+                              value={item.value} 
+                              isTime={item.isTime}
+                              onChange={item.onChange}
+                              isDarkMode={isDarkMode}
+                            />
+                          ))}
+                        </div>
+
+                        {/* Sound Selector */}
+                        <div className="space-y-4">
+                          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 italic">Sound effects</h4>
+                          <div className="space-y-6">
+                            {[
+                              { label: "Round Start/End", key: 'startSound' },
+                              { label: "Interval Alert", key: 'intervalSound' },
+                              { label: "Warning Alert", key: 'warningSound' },
+                              { label: "Final Bell", key: 'finishSound' },
+                            ].map((s) => (
+                              <div key={s.key} className="space-y-3">
+                                <span className="text-[9px] font-bold uppercase opacity-60 tracking-wider flex items-center gap-2">
+                                  <Volume2 size={10} /> {s.label}
+                                </span>
+                                <div className="flex gap-2 flex-wrap">
+                                  {(['bell', 'horn', 'tap', 'beep', 'double_tap'] as SoundType[]).map(sound => (
+                                    <button
+                                      key={sound}
+                                      onClick={() => {
+                                        setConfig(prev => ({ ...prev, [s.key]: sound }));
+                                        playAudio(sound);
+                                      }}
+                                      className={`px-3 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-tight transition-all ${
+                                        (config as any)[s.key] === sound
+                                          ? 'bg-warmup text-white shadow-lg shadow-warmup/30'
+                                          : isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-slate-100 hover:bg-slate-200'
+                                      }`}
+                                    >
+                                      {sound.replace('_', ' ')}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </div>
 
-              <button
-                onClick={() => {
-                  setSelectedWorkout(null);
-                  startTraining();
-                }}
-                disabled={config.warmupTime === 0 && config.fightTime === 0 && config.restTime === 0}
-                className={`w-full py-7 font-display text-xl font-black italic uppercase tracking-widest rounded-[32px] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-4 mt-8 disabled:opacity-30 disabled:pointer-events-none ${
-                   isDarkMode ? 'bg-warmup text-white shadow-warmup/20' : 'bg-black text-white shadow-black/10'
-                }`}
-              >
-                Jump In the Cage
-              </button>
-
+                    <button
+                      onClick={() => setCurrentView('tabs')}
+                      className="w-full mt-4 py-6 bg-emerald-500 text-white font-display text-lg font-black italic uppercase rounded-3xl active:scale-95 transition-all shadow-xl shadow-emerald-500/20"
+                    >
+                      Save & Apply
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </motion.div>
         )}
 
-        {/* Global Overlays */}
-        <AnimatePresence>
-          {showAdvancedSettings && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-md p-6 flex items-end justify-center"
-            >
-              <motion.div 
-                initial={{ y: "100%" }}
-                animate={{ y: 0 }}
-                exit={{ y: "100%" }}
-                transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className={`w-full max-w-lg rounded-[48px] p-8 max-h-[85vh] overflow-y-auto custom-scrollbar ${
-                  isDarkMode ? 'bg-zinc-900 border border-white/5' : 'bg-white shadow-2xl'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-8">
-                  <div className="flex items-center gap-3">
-                    <Sliders size={20} className="text-warmup" />
-                    <h3 className="text-2xl font-display font-black italic tracking-tight">Advanced Gear</h3>
-                  </div>
-                  <button 
-                    onClick={() => setShowAdvancedSettings(false)}
-                    className={`p-3 rounded-2xl ${isDarkMode ? 'bg-white/5' : 'bg-slate-100'}`}
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-
-                <div className="space-y-8">
-                  {/* Advanced Phases */}
-                  <div className="space-y-4">
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 italic">Tuning & Alerts</h4>
-                    {[
-                      { label: "Warning", value: config.warningTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, warningTime: Math.max(0, v) })) },
-                      { label: "Intervals", value: config.intervalTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, intervalTime: Math.max(0, v) })) },
-                    ].map((item) => (
-                      <ConfigStepper 
-                        key={item.label}
-                        label={item.label} 
-                        value={item.value} 
-                        isTime={item.isTime}
-                        onChange={item.onChange}
-                        isDarkMode={isDarkMode}
-                      />
-                    ))}
-                  </div>
-
-                  {/* Sound Selector */}
-                  <div className="space-y-4">
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 italic">Sound effects</h4>
-                    <div className="space-y-4">
-                      {[
-                        { label: "Round Start/End", key: 'startSound' },
-                        { label: "Interval Alert", key: 'intervalSound' },
-                        { label: "Warning Alert", key: 'warningSound' },
-                        { label: "Final Bell", key: 'finishSound' },
-                      ].map((s) => (
-                        <div key={s.key} className="space-y-2">
-                          <span className="text-[9px] font-bold uppercase opacity-60 tracking-wider flex items-center gap-2">
-                            <Volume2 size={10} /> {s.label}
-                          </span>
-                          <div className="flex gap-2 flex-wrap">
-                            {(['bell', 'horn', 'tap', 'beep', 'double_tap'] as SoundType[]).map(sound => (
-                              <button
-                                key={sound}
-                                onClick={() => {
-                                  setConfig(prev => ({ ...prev, [s.key]: sound }));
-                                  playAudio(sound);
-                                }}
-                                className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-tight transition-all ${
-                                  config[s.key as keyof Config] === sound
-                                    ? 'bg-warmup text-white shadow-lg shadow-warmup/30'
-                                    : isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-slate-100 hover:bg-slate-200'
-                                }`}
-                              >
-                                {sound.replace('_', ' ')}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setShowAdvancedSettings(false)}
-                  className="w-full mt-10 py-5 bg-warmup text-white font-display text-lg font-black italic uppercase rounded-3xl active:scale-95 transition-all shadow-xl shadow-warmup/20"
-                >
-                  Apply Gear
-                </button>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </AnimatePresence>
 
       {/* Workout Tutorial Overlay */}
