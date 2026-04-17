@@ -913,16 +913,29 @@ export default function App() {
                         </button>
                         
                         {!isActive && (
-                          <button 
-                            onClick={() => setCurrentView('setup')}
-                            className={`p-3 rounded-2xl transition-all active:scale-90 ${
-                              isDarkMode 
-                                ? 'glass-card glass-card-hover bg-warmup/10 border-warmup/20 text-warmup' 
-                                : 'bg-warmup/10 text-warmup border border-warmup/20 shadow-sm hover:bg-warmup/20'
-                            }`}
-                          >
-                            <Settings size={20} />
-                          </button>
+                          <div className="flex items-center gap-2">
+                             <button 
+                              onClick={() => setShowAdvancedSettings(true)}
+                              className={`p-3 rounded-2xl transition-all active:scale-90 ${
+                                isDarkMode 
+                                  ? 'glass-card glass-card-hover bg-zinc-800/50 text-white/70' 
+                                  : 'bg-slate-100 text-slate-500 border border-slate-200 shadow-sm hover:bg-slate-200'
+                              }`}
+                            >
+                              <Sliders size={20} />
+                            </button>
+                            
+                            <button 
+                              onClick={() => setCurrentView('setup')}
+                              className={`p-3 rounded-2xl transition-all active:scale-90 ${
+                                isDarkMode 
+                                  ? 'glass-card glass-card-hover bg-warmup/10 border-warmup/20 text-warmup' 
+                                  : 'bg-warmup/10 text-warmup border border-warmup/20 shadow-sm hover:bg-warmup/20'
+                              }`}
+                            >
+                              <Settings size={20} />
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -1468,75 +1481,6 @@ export default function App() {
                             <button className="w-full mt-6 py-3 text-[10px] font-black uppercase tracking-widest opacity-30 hover:opacity-100 transition-opacity">
                               View All Activity
                             </button>
-                          </div>
-
-                          <div className="flex flex-col gap-6 pt-4">
-                            <div className="flex items-center gap-3 mb-2 px-2">
-                              <Sliders size={20} className="text-warmup" />
-                              <h3 className="text-xl font-display font-black italic tracking-tight uppercase">Training Gear</h3>
-                            </div>
-                            
-                            <div className={`p-8 rounded-[40px] border ${isDarkMode ? 'glass-card border-white/5' : 'bg-slate-50 border-slate-200'}`}>
-                              <div className="space-y-10">
-                                {/* Alerts */}
-                                <div className="space-y-4">
-                                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 italic text-center">Tuning & Alerts</h4>
-                                  <div className="space-y-4">
-                                    {[
-                                      { label: "Warning", value: config.warningTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, warningTime: Math.max(0, v) })) },
-                                      { label: "Intervals", value: config.intervalTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, intervalTime: Math.max(0, v) })) },
-                                    ].map(item => (
-                                      <ConfigStepper 
-                                        key={item.label}
-                                        label={item.label} 
-                                        value={item.value} 
-                                        isTime={item.isTime}
-                                        onChange={item.onChange}
-                                        isDarkMode={isDarkMode}
-                                      />
-                                    ))}
-                                  </div>
-                                </div>
-
-                                {/* Sound Settings */}
-                                <div className="space-y-6">
-                                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 italic text-center">Audio Cues</h4>
-                                  <div className="space-y-6">
-                                    {[
-                                      { label: 'Start Round', key: 'startSound' },
-                                      { label: 'Interval Alert', key: 'intervalSound' },
-                                      { label: 'Warning Tap', key: 'warningSound' },
-                                      { label: 'Final Horn', key: 'finishSound' },
-                                    ].map((s) => (
-                                      <div key={s.key} className="space-y-3">
-                                        <div className="flex items-center justify-between px-2">
-                                          <span className="text-xs font-bold opacity-60">{s.label}</span>
-                                          <span className="text-[10px] font-mono text-warmup">{config[s.key as keyof Config]}</span>
-                                        </div>
-                                        <div className="grid grid-cols-3 gap-2">
-                                          {['bell', 'horn', 'tap', 'beep', 'double_tap'].map((sound) => (
-                                            <button
-                                              key={sound}
-                                              onClick={() => {
-                                                setConfig(prev => ({ ...prev, [s.key]: sound }));
-                                                playAudio(sound as SoundType);
-                                              }}
-                                              className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-tight transition-all ${
-                                                config[s.key as keyof Config] === sound
-                                                  ? 'bg-warmup text-white shadow-lg shadow-warmup/30'
-                                                  : isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-slate-200 hover:bg-slate-300'
-                                              }`}
-                                            >
-                                              {sound.replace('_', ' ')}
-                                            </button>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
                           </div>
 
                           <button 
