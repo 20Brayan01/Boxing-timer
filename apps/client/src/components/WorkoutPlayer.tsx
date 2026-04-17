@@ -33,12 +33,23 @@ export default function WorkoutPlayer({ workout, onClose, onComplete }: Props) {
   const currentSection = workout.sections[sectionIndex];
   const currentExercise = currentSection?.exercises[exerciseIndex];
 
-  // Initialize active exercise based on current original exercise
+  // Sync active exercise and timer when steps change
   useEffect(() => {
-    if (currentExercise) {
-      setActiveExercise(currentExercise);
+    if (state === 'working' && currentExercise) {
+      // Only reset active exercise if we moved to a new exercise id
+      if (activeExercise?.id !== currentExercise.id) {
+        setActiveExercise(currentExercise);
+      }
+      
+      if (currentExercise.type === 'time') {
+        setTimeLeft(currentExercise.repsOrDuration);
+        setIsActive(true);
+      } else {
+        setTimeLeft(0);
+        setIsActive(false);
+      }
     }
-  }, [currentExercise]);
+  }, [sectionIndex, sectionRepeatIndex, exerciseIndex, setIndex, state]);
 
   const totalSteps = useMemo(() => {
     let count = 0;
@@ -139,6 +150,8 @@ export default function WorkoutPlayer({ workout, onClose, onComplete }: Props) {
       } else {
         nextStep();
       }
+    } else if (state === 'resting' || state === 'section_rest') {
+      nextStep();
     } else {
       nextStep();
     }
@@ -151,20 +164,20 @@ export default function WorkoutPlayer({ workout, onClose, onComplete }: Props) {
     // 1. Next Set
     if (setIndex < (activeExercise?.setsOrRounds || 1) - 1) {
       setSetIndex(prev => prev + 1);
-      startExercise();
+      setState('working');
       return;
     }
 
     // 2. Next Exercise in Section
-    if (exerciseIndex < currentSection.exercises.length - 1) {
+    if (currentSection && exerciseIndex < currentSection.exercises.length - 1) {
       setExerciseIndex(prev => prev + 1);
       setSetIndex(0);
-      startExercise();
+      setState('working');
       return;
     }
 
     // 3. Finished round of section
-    if (sectionRepeatIndex < (currentSection.repeatCount || 1) - 1) {
+    if (currentSection && sectionRepeatIndex < (currentSection.repeatCount || 1) - 1) {
       if (currentSection.restBetweenRounds > 0 && state !== 'section_rest') {
         setState('section_rest');
         setTimeLeft(currentSection.restBetweenRounds);
@@ -173,7 +186,7 @@ export default function WorkoutPlayer({ workout, onClose, onComplete }: Props) {
         setSectionRepeatIndex(prev => prev + 1);
         setExerciseIndex(0);
         setSetIndex(0);
-        startExercise();
+        setState('working');
       }
       return;
     }
@@ -184,7 +197,7 @@ export default function WorkoutPlayer({ workout, onClose, onComplete }: Props) {
       setSectionRepeatIndex(0);
       setExerciseIndex(0);
       setSetIndex(0);
-      startExercise();
+      setState('working');
       return;
     }
 
@@ -196,49 +209,35 @@ export default function WorkoutPlayer({ workout, onClose, onComplete }: Props) {
     setIsActive(false);
     if (setIndex > 0) {
       setSetIndex(prev => prev - 1);
-      startExercise();
+      setState('working');
     } else if (exerciseIndex > 0) {
+      const prevEx = currentSection?.exercises[exerciseIndex - 1];
       setExerciseIndex(prev => prev - 1);
-      const prevEx = currentSection.exercises[exerciseIndex - 1];
-      setSetIndex(prevEx.setsOrRounds - 1);
-      startExercise();
+      setSetIndex((prevEx?.setsOrRounds || 1) - 1);
+      setState('working');
     } else if (sectionRepeatIndex > 0) {
       setSectionRepeatIndex(prev => prev - 1);
-      setExerciseIndex(currentSection.exercises.length - 1);
-      const prevEx = currentSection.exercises[currentSection.exercises.length - 1];
-      setSetIndex(prevEx.setsOrRounds - 1);
-      startExercise();
+      setExerciseIndex((currentSection?.exercises.length || 1) - 1);
+      const prevEx = currentSection?.exercises[(currentSection?.exercises.length || 1) - 1];
+      setSetIndex((prevEx?.setsOrRounds || 1) - 1);
+      setState('working');
     } else if (sectionIndex > 0) {
-      setSectionIndex(prev => prev - 1);
       const prevSec = workout.sections[sectionIndex - 1];
-      setSectionRepeatIndex(prevSec.repeatCount - 1);
-      setExerciseIndex(prevSec.exercises.length - 1);
-      const prevEx = prevSec.exercises[prevSec.exercises.length - 1];
-      setSetIndex(prevEx.setsOrRounds - 1);
-      startExercise();
-    }
-  };
-
-  const startExercise = () => {
-    setState('working');
-    // Ensure we refer to a fresh exercise if indices changed
-    const targetEx = workout.sections[sectionIndex].exercises[exerciseIndex];
-    if (targetEx.type === 'time') {
-      setTimeLeft(targetEx.repsOrDuration);
-      setIsActive(true);
-    } else {
-      setTimeLeft(0);
-      setIsActive(false);
+      setSectionIndex(prev => prev - 1);
+      setSectionRepeatIndex((prevSec?.repeatCount || 1) - 1);
+      setExerciseIndex((prevSec?.exercises.length || 1) - 1);
+      const prevEx = prevSec?.exercises[(prevSec?.exercises.length || 1) - 1];
+      setSetIndex((prevEx?.setsOrRounds || 1) - 1);
+      setState('working');
     }
   };
 
   const startWorkout = () => {
-    setState('working');
     setSectionIndex(0);
     setSectionRepeatIndex(0);
     setExerciseIndex(0);
     setSetIndex(0);
-    startExercise();
+    setState('working');
   };
 
   const toggleAlternative = () => {

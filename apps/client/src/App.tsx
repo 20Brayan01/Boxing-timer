@@ -22,11 +22,19 @@ type View = 'tabs' | 'setup' | 'timer' | 'workout-detail';
 
 const WORKOUTS: Workout[] = [];
 
+type SoundType = 'bell' | 'horn' | 'tap' | 'beep' | 'double_tap';
+
 interface Config {
   rounds: number;
   fightTime: number; // in seconds
   restTime: number;
   warmupTime: number;
+  warningTime: number; // seconds before finish
+  intervalTime: number; // recurring beep
+  startSound: SoundType;
+  warningSound: SoundType;
+  intervalSound: SoundType;
+  finishSound: SoundType;
 }
 
 const DEFAULT_CONFIG: Config = {
@@ -34,6 +42,12 @@ const DEFAULT_CONFIG: Config = {
   fightTime: 180, // 3 minutes
   restTime: 60,   // 1 minute
   warmupTime: 10, // 10 seconds
+  warningTime: 10,
+  intervalTime: 0,
+  startSound: 'bell',
+  warningSound: 'tap',
+  intervalSound: 'beep',
+  finishSound: 'horn',
 };
 
 export default function App() {
@@ -342,6 +356,51 @@ export default function App() {
   }, [isDarkMode]);
 
   // Sound generator
+  const playAudio = useCallback((type: SoundType) => {
+    if (isMuted) return;
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    const ctx = audioContextRef.current;
+    
+    const playNote = (freq: number, duration: number, type: OscillatorType = 'sine', startTime: number = 0) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + startTime);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime + startTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + startTime + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + startTime);
+      osc.stop(ctx.currentTime + startTime + duration);
+    };
+
+    switch (type) {
+      case 'bell':
+        // Boxing Round Bell (Triple hit)
+        [0, 0.2, 0.4].forEach(offset => playNote(880, 0.8, 'triangle', offset));
+        break;
+      case 'horn':
+        // Final Final Horn
+        playNote(110, 1.5, 'sawtooth');
+        playNote(115, 1.5, 'sawtooth');
+        break;
+      case 'tap':
+        // Wood block tap
+        playNote(1200, 0.05, 'square');
+        break;
+      case 'beep':
+        playNote(880, 0.1, 'sine');
+        break;
+      case 'double_tap':
+        playNote(1000, 0.05, 'square');
+        playNote(1000, 0.05, 'square', 0.1);
+        break;
+    }
+  }, [isMuted]);
+
+  // Modernized legacy sound call for compatibility
   const playSound = useCallback((frequency: number, duration: number) => {
     if (isMuted) return;
     if (!audioContextRef.current) {
@@ -366,32 +425,27 @@ export default function App() {
 
   const handleTimerEnd = useCallback(() => {
     if (timerState === 'WARMUP') {
-      // Fight Start Sound (High)
-      playSound(880, 0.5);
+      playAudio(config.startSound);
       setTimerState('FIGHT');
       setTimeLeft(config.fightTime);
     } else if (timerState === 'FIGHT') {
       if (currentRound < config.rounds) {
-        // Rest Start Sound (Lower)
-        playSound(440, 0.5);
+        playAudio(config.startSound); // Round end/Rest start
         setTimerState('REST');
         setTimeLeft(config.restTime);
       } else {
-        // Workout Finished Sound (Victory)
-        playSound(880, 0.3);
-        setTimeout(() => playSound(1046.5, 0.8), 300);
+        playAudio(config.finishSound);
         setTimerState('FINISHED');
         setIsActive(false);
         setShowRating(true);
       }
     } else if (timerState === 'REST') {
-      // Round Start Sound (High)
-      playSound(880, 0.5);
+      playAudio(config.startSound);
       setTimerState('FIGHT');
       setCurrentRound(prev => prev + 1);
       setTimeLeft(config.fightTime);
     }
-  }, [timerState, currentRound, config, playSound]);
+  }, [timerState, currentRound, config, playAudio]);
 
   const skipPhase = () => {
     handleTimerEnd();
@@ -400,11 +454,25 @@ export default function App() {
   useEffect(() => {
     if (isActive && timeLeft > 0) {
       timerRef.current = setInterval(() => {
-        setTimeLeft(prev => prev - 1);
+        setTimeLeft(prev => {
+          const next = prev - 1;
+          
+          // Interval beep logic
+          if (timerState === 'FIGHT' && config.intervalTime > 0) {
+            const elapsedInRound = config.fightTime - next;
+            if (elapsedInRound > 0 && elapsedInRound % config.intervalTime === 0 && next > 0) {
+              playAudio(config.intervalSound);
+            }
+          }
+
+          // Warning logic
+          if (timerState === 'FIGHT' && next === config.warningTime && next > 0) {
+             playAudio(config.warningSound);
+          }
+
+          return next;
+        });
         setTotalSecondsElapsed(prev => prev + 1);
-        if (timerState === 'FIGHT' && timeLeft <= 11 && timeLeft > 1) {
-          playSound(660, 0.1);
-        }
       }, 1000);
     } else if (timeLeft === 0 && isActive) {
       handleTimerEnd();
@@ -413,23 +481,37 @@ export default function App() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isActive, timeLeft, handleTimerEnd, timerState, playSound]);
+  }, [isActive, timeLeft, handleTimerEnd, timerState, config, playAudio]);
 
   const toggleTimer = () => {
     setIsActive(!isActive);
   };
 
   const startTraining = () => {
-    // Start Sound
-    playSound(660, 0.2);
-    setTimeout(() => playSound(880, 0.4), 200);
+    // Validation: At least one phase must have time
+    if (config.warmupTime === 0 && config.fightTime === 0 && config.restTime === 0) {
+      return;
+    }
+
+    playAudio(config.startSound);
     
-    setTimerState('WARMUP');
-    setTimeLeft(config.warmupTime);
     setCurrentRound(1);
-    setIsActive(true);
-    setCurrentView('timer');
     setTotalSecondsElapsed(0);
+    setCurrentView('timer');
+
+    if (config.warmupTime > 0) {
+      setTimerState('WARMUP');
+      setTimeLeft(config.warmupTime);
+      setIsActive(true);
+    } else if (config.fightTime > 0) {
+      setTimerState('FIGHT');
+      setTimeLeft(config.fightTime);
+      setIsActive(true);
+    } else {
+      setTimerState('REST');
+      setTimeLeft(config.restTime);
+      setIsActive(true);
+    }
   };
 
   const resetTimer = () => {
@@ -1445,17 +1527,23 @@ export default function App() {
               </div>
 
               <div className="space-y-5 pb-10">
+                <div className="flex items-center gap-3 mb-4">
+                  <Clock size={18} className="text-warmup" />
+                  <h3 className="text-sm font-black uppercase tracking-widest italic opacity-50">Timer Phases</h3>
+                </div>
                 {[
-                  { label: "Rounds", value: config.rounds, onChange: (v: number) => setConfig(prev => ({ ...prev, rounds: Math.max(1, v) })) },
-                  { label: "Fight Time", value: config.fightTime, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, fightTime: Math.max(10, v) })) },
-                  { label: "Rest Time", value: config.restTime, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, restTime: Math.max(5, v) })) },
-                  { label: "Warmup", value: config.warmupTime, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, warmupTime: Math.max(5, v) })) },
+                  { label: "Rounds", value: config.rounds, min: 1, onChange: (v: number) => setConfig(prev => ({ ...prev, rounds: Math.max(1, v) })) },
+                  { label: "Warmup", value: config.warmupTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, warmupTime: Math.max(0, v) })) },
+                  { label: "Fight Time", value: config.fightTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, fightTime: Math.max(0, v) })) },
+                  { label: "Rest Time", value: config.restTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, restTime: Math.max(0, v) })) },
+                  { label: "Warning", value: config.warningTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, warningTime: Math.max(0, v) })) },
+                  { label: "Intervals", value: config.intervalTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, intervalTime: Math.max(0, v) })) },
                 ].map((item, idx) => (
                   <motion.div
                     key={item.label}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.1 }}
+                    transition={{ delay: idx * 0.05 }}
                   >
                     <ConfigStepper 
                       label={item.label} 
@@ -1466,6 +1554,50 @@ export default function App() {
                     />
                   </motion.div>
                 ))}
+
+                <div className="pt-4 flex items-center gap-3 mb-2">
+                  <Volume2 size={18} className="text-fight" />
+                  <h3 className="text-sm font-black uppercase tracking-widest italic opacity-50">Custom Sounds</h3>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                  {[
+                    { label: "Round Start/End", key: 'startSound' },
+                    { label: "Interval Alert", key: 'intervalSound' },
+                    { label: "Warning Alert", key: 'warningSound' },
+                    { label: "Final Bell", key: 'finishSound' },
+                  ].map((s, idx) => (
+                    <motion.div 
+                      key={s.key}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.3 + (idx * 0.05) }}
+                      className={`p-4 rounded-2xl border flex flex-col gap-3 ${
+                        isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'
+                      }`}
+                    >
+                      <span className="text-[10px] font-black uppercase tracking-widest opacity-40 italic">{s.label}</span>
+                      <div className="flex gap-2 flex-wrap">
+                        {(['bell', 'horn', 'tap', 'beep', 'double_tap'] as SoundType[]).map(sound => (
+                          <button
+                            key={sound}
+                            onClick={() => {
+                              setConfig(prev => ({ ...prev, [s.key]: sound }));
+                              playAudio(sound);
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase transition-all ${
+                              config[s.key as keyof Config] === sound
+                                ? 'bg-warmup text-white shadow-lg shadow-warmup/20 animate-pulse-gentle'
+                                : isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-white hover:bg-slate-200'
+                            }`}
+                          >
+                            {sound.replace('_', ' ')}
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
 
               <button
@@ -1473,7 +1605,8 @@ export default function App() {
                   setSelectedWorkout(null);
                   startTraining();
                 }}
-                className={`w-full py-5 font-bold rounded-2xl shadow-xl active:scale-95 transition-transform flex items-center justify-center gap-3 ${isDarkMode ? 'bg-white text-black shadow-white/5' : 'bg-black text-white shadow-black/10'}`}
+                disabled={config.warmupTime === 0 && config.fightTime === 0 && config.restTime === 0}
+                className={`w-full py-5 font-bold rounded-2xl shadow-xl active:scale-95 transition-transform flex items-center justify-center gap-3 mt-4 disabled:opacity-30 disabled:pointer-events-none ${isDarkMode ? 'bg-white text-black shadow-white/5' : 'bg-black text-white shadow-black/10'}`}
               >
                 <Play size={20} fill="currentColor" />
                 Start Training
