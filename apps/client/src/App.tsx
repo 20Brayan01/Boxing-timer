@@ -833,10 +833,11 @@ export default function App() {
                 {!isPremium && (
                   <button 
                     onClick={() => setShowSubscription(true)}
+                    title="Unlock advanced presets and pro features"
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500 text-black text-[10px] font-black uppercase tracking-wider shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
                   >
                     <Crown size={12} fill="currentColor" />
-                    Go Pro
+                    Get Pro Access
                   </button>
                 )}
                 <div className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1.5 shadow-sm transition-all ${
@@ -892,17 +893,18 @@ export default function App() {
                       </button>
                       
                       <div className="flex flex-col items-center">
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-0.5">
-                          {selectedWorkout ? selectedWorkout.category : 'Free Training'}
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-0.5" title="Operating mode">
+                          {selectedWorkout ? selectedWorkout.category : 'Standard Mode'}
                         </span>
                         <h2 className="text-sm font-display font-black italic uppercase tracking-widest text-warmup text-center">
-                          {selectedWorkout ? selectedWorkout.name : 'Quick Session'}
+                          {selectedWorkout ? selectedWorkout.name : 'Custom Timer'}
                         </h2>
                       </div>
 
                       <div className="flex items-center gap-2">
                         <button 
                           onClick={() => setIsMuted(!isMuted)}
+                          title={isMuted ? "Unmute sounds" : "Mute sounds"}
                           className={`p-3 rounded-2xl transition-all active:scale-90 ${
                             isDarkMode 
                               ? 'glass-card glass-card-hover' 
@@ -916,6 +918,7 @@ export default function App() {
                           <div className="flex items-center gap-2">
                              <button 
                               onClick={() => setShowAdvancedSettings(true)}
+                              title="Training Gear (Alerts, Sounds, Intervals)"
                               className={`p-3 rounded-2xl transition-all active:scale-90 ${
                                 isDarkMode 
                                   ? 'glass-card glass-card-hover bg-zinc-800/50 text-white/70' 
@@ -927,6 +930,7 @@ export default function App() {
                             
                             <button 
                               onClick={() => setCurrentView('setup')}
+                              title="Session Setup (Rounds, Times)"
                               className={`p-3 rounded-2xl transition-all active:scale-90 ${
                                 isDarkMode 
                                   ? 'glass-card glass-card-hover bg-warmup/10 border-warmup/20 text-warmup' 
@@ -962,18 +966,38 @@ export default function App() {
                         <motion.div 
                           className={`w-64 h-64 rounded-full flex items-center justify-center relative z-10 dial-surface ${!isDarkMode ? 'light' : ''}`}
                           animate={{ 
-                            scale: isActive ? 1.02 : 1,
+                            scale: isActive ? 1.05 : 1,
+                            backgroundColor: timerState === 'REST' ? (isDarkMode ? 'rgba(16, 185, 129, 0.05)' : 'rgba(16, 185, 129, 0.03)') : 'transparent'
                           }}
                           transition={{ duration: 0.5, ease: "easeOut" }}
                         >
                           <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
-                            <motion.circle
+                            {/* Inner Subtle Fill Gradient */}
+                            <defs>
+                              <radialGradient id="timerGradient" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stopColor={getThemeColor()} stopOpacity="0" />
+                                <stop offset="100%" stopColor={getThemeColor()} stopOpacity="0.1" />
+                              </radialGradient>
+                            </defs>
+
+                            {/* Ghost/Background Ring */}
+                            <circle
                               cx="128"
                               cy="128"
                               r="120"
                               fill="transparent"
+                              stroke={isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
+                              strokeWidth="10"
+                            />
+
+                            {/* Progress Ring */}
+                            <motion.circle
+                              cx="128"
+                              cy="128"
+                              r="120"
+                              fill="url(#timerGradient)"
                               stroke={getThemeColor()}
-                              strokeWidth="6"
+                              strokeWidth="10"
                               strokeLinecap="round"
                               strokeDasharray={2 * Math.PI * 120}
                               animate={{ 
@@ -984,7 +1008,7 @@ export default function App() {
                                 ease: "linear",
                               }}
                               style={{ 
-                                filter: `drop-shadow(0 0 8px ${getThemeColor()})`,
+                                filter: `drop-shadow(0 0 12px ${getThemeColor()}44)`,
                                 opacity: timerState === 'IDLE' ? 0.1 : 1
                               }}
                             />
@@ -995,19 +1019,42 @@ export default function App() {
                             <AnimatePresence mode="wait">
                               <motion.span
                                 key={timerState + (timerState === 'FIGHT' && timeLeft <= 10 ? '-warn' : '')}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                className="font-display text-sm font-black uppercase tracking-[0.2em] mb-1"
-                                style={{ color: getThemeColor() }}
+                                initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                                animate={{ 
+                                  opacity: 1, 
+                                  y: 0, 
+                                  scale: timerState === 'REST' ? 1.2 : 1,
+                                  fontWeight: timerState === 'REST' ? 900 : 800
+                                }}
+                                exit={{ opacity: 0, y: -10, scale: 0.9 }}
+                                className={`font-display uppercase tracking-[0.25em] mb-2 px-4 py-1 rounded-full transition-all ${
+                                  timerState === 'REST' 
+                                    ? (isDarkMode ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-600')
+                                    : ''
+                                }`}
+                                style={{ 
+                                  color: timerState === 'REST' ? undefined : getThemeColor(),
+                                  fontSize: timerState === 'REST' ? '1.1rem' : '0.75rem'
+                                }}
                               >
                                 {timerState === 'FIGHT' && timeLeft <= 10 ? 'Finish Strong!' : (timerState === 'IDLE' ? 'Ready' : timerState)}
                               </motion.span>
                             </AnimatePresence>
                             
-                            <span className={`font-mono text-6xl font-black tracking-tighter tabular-nums ${!isDarkMode ? 'text-slate-900' : 'text-white'}`}>
+                            <span className={`font-mono text-7xl font-black tracking-tighter tabular-nums ${!isDarkMode ? 'text-slate-900' : 'text-white'}`}>
                               {formatTime(timeLeft)}
                             </span>
+
+                            {/* Progress Percentage Subtle */}
+                            {timerState !== 'IDLE' && (
+                              <motion.span 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 0.3 }}
+                                className="text-[10px] font-black mt-2 opacity-30"
+                              >
+                                {Math.round(getProgress())}%
+                              </motion.span>
+                            )}
 
                             {/* Central Knob Detail */}
                             <div className={`absolute w-12 h-12 rounded-full opacity-10 border-2 ${!isDarkMode ? 'border-black' : 'border-white'}`} />
