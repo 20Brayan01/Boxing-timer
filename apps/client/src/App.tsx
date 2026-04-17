@@ -11,9 +11,9 @@ import {
   ChevronUp, ChevronDown, X, Home, Dumbbell, User, 
   FastForward, Info, Award, History, Clock, Star, Plus, Minus,
   ChevronLeft, ChevronRight, Share2, Zap, Coffee, ShieldCheck, TrendingUp, Moon, Sun,
-  Crown, CheckCircle2, Sparkles, LayoutDashboard
+  Crown, CheckCircle2, Sparkles, LayoutDashboard, Layout
 } from 'lucide-react';
-import { TimerState, Workout, User as SharedUser } from '../../../packages/shared/types';
+import { TimerState, Workout, User as SharedUser } from './shared-types';
 import WorkoutPlayer from './components/WorkoutPlayer';
 
 type Tab = 'home' | 'workouts' | 'profile';
@@ -83,13 +83,50 @@ export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [isPlayingWorkout, setIsPlayingWorkout] = useState(false);
+  const [publicStats, setPublicStats] = useState<any>(null);
 
-  // Fetch workouts
+  // Fetch workouts and global stats
   useEffect(() => {
-    fetch('/api/workouts')
+    const API_URL = import.meta.env.VITE_API_URL || 'https://training-grounds-production.up.railway.app';
+    
+    // Fetch stats
+    fetch(`${API_URL}/api/public-stats`)
       .then(res => res.json())
-      .then(data => setWorkouts(data))
-      .catch(err => console.error('Failed to fetch workouts:', err));
+      .then(setPublicStats)
+      .catch(err => console.error('Stats fetch error:', err));
+
+    fetch(`${API_URL}/api/workouts`)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new TypeError("Oops, we haven't got JSON!");
+        }
+        return res.json();
+      })
+      .then(data => {
+        // Normalization for the hierarchical model
+        const normalizedData = data.map((w: any) => ({
+          ...w,
+          isPremium: w.isPremium ?? !!w.is_premium ?? false,
+          gifUrl: w.gifUrl || w.gif_url || '',
+          completions: w.completions ?? 0,
+          sections: (Array.isArray(w.sections) ? w.sections : []).map((s: any) => ({
+            ...s,
+            exercises: (Array.isArray(s.exercises) ? s.exercises : []).map((e: any) => ({
+              ...e,
+              setsOrRounds: e.setsOrRounds || 1,
+              repsOrDuration: e.repsOrDuration || 0,
+              restBetweenSets: e.restBetweenSets || 0
+            }))
+          }))
+        }));
+        setWorkouts(normalizedData);
+      })
+      .catch(err => {
+        console.error('Failed to fetch workouts:', err);
+        setWorkouts([]);
+      });
   }, []);
 
   // Auto-hide splash screen
@@ -118,22 +155,24 @@ export default function App() {
   }, [token]);
 
   const fetchUser = async () => {
+    const API_URL = import.meta.env.VITE_API_URL || 'https://training-grounds-production.up.railway.app';
     try {
-      const res = await fetch('/api/auth/me', {
+      const res = await fetch(`${API_URL}/api/auth/me`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        const userData = await res.json();
-        setUser(userData);
-        checkSubscriptionWarning(userData.subscription_end_date);
-        if (userData.subscription_end_date) {
-          const isExpired = new Date(userData.subscription_end_date) < new Date();
-          setIsPremium(!isExpired);
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const userData = await res.json();
+          setUser(userData);
+          checkSubscriptionWarning(userData.subscription_end_date);
+          if (userData.subscription_end_date) {
+            const isExpired = new Date(userData.subscription_end_date) < new Date();
+            setIsPremium(!isExpired);
+          }
         }
       } else {
         console.error('Fetch user failed with status:', res.status);
-        const errorData = await res.json().catch(() => ({}));
-        console.error('Fetch user error data:', errorData);
         handleLogout();
       }
     } catch (err) {
@@ -142,8 +181,9 @@ export default function App() {
   };
 
   const verifySubscription = async (sessionId: string) => {
+    const API_URL = import.meta.env.VITE_API_URL || 'https://training-grounds-production.up.railway.app';
     try {
-      const res = await fetch('/api/subscription/verify', {
+      const res = await fetch(`${API_URL}/api/subscription/verify`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -152,8 +192,11 @@ export default function App() {
         body: JSON.stringify({ sessionId })
       });
       if (res.ok) {
-        setPaymentResult('success');
-        fetchUser();
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          setPaymentResult('success');
+          fetchUser();
+        }
       } else {
         setPaymentResult('failure');
       }
@@ -184,50 +227,42 @@ export default function App() {
     e.preventDefault();
     setAuthError('');
     setIsAuthLoading(true);
-    const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/signup';
+    const API_URL = import.meta.env.VITE_API_URL || 'https://training-grounds-production.up.railway.app';
+    const endpoint = authMode === 'login' ? `${API_URL}/api/auth/login` : `${API_URL}/api/auth/signup`;
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: authEmail, password: authPassword })
       });
-      const data = await res.json();
-      if (res.ok) {
+      
+      const contentType = res.headers.get("content-type");
+      if (res.ok && contentType && contentType.includes("application/json")) {
+        const data = await res.json();
         if (authMode === 'login') {
           localStorage.setItem('token', data.token);
           setToken(data.token);
           setUser(data.user);
-          setIsPremium(!!data.user.subscription_end_date && new Date(data.user.subscription_end_date) > new Date());
+          const hasActiveSub = data.user.subscription_end_date && new Date(data.user.subscription_end_date) > new Date();
+          setIsPremium(!!hasActiveSub);
           setAuthEmail('');
           setAuthPassword('');
         } else {
-          // Auto-login after signup
-          const loginRes = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: authEmail, password: authPassword })
-          });
-          const loginData = await loginRes.json();
-          if (loginRes.ok) {
-            localStorage.setItem('token', loginData.token);
-            setToken(loginData.token);
-            setUser(loginData.user);
-            setIsPremium(!!loginData.user.subscription_end_date && new Date(loginData.user.subscription_end_date) > new Date());
-            setAuthEmail('');
-            setAuthPassword('');
-            
-            if (authSource === 'subscription') {
-              setShowSubscription(true);
-            } else {
-              setShowWelcomeModal(true);
-            }
-          } else {
+          // New Signup Flow from Docs: { success: true, userId: "..." }
+          if (data.success) {
             setAuthMode('login');
-            setAuthError('Account created! Please login.');
+            setAuthError('Account created! Please log in.');
+          } else {
+            setAuthError(data.error || 'Signup failed');
           }
         }
       } else {
-        setAuthError(data.error);
+        let errorMsg = 'Authentication failed';
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await res.json();
+          errorMsg = errorData.error || errorMsg;
+        }
+        setAuthError(errorMsg);
       }
     } catch (err) {
       setAuthError('Authentication failed');
@@ -236,7 +271,18 @@ export default function App() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const API_URL = import.meta.env.VITE_API_URL || 'https://training-grounds-production.up.railway.app';
+    if (token) {
+      try {
+        await fetch(`${API_URL}/api/auth/logout`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      } catch (err) {
+        console.error('Logout failed:', err);
+      }
+    }
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);
@@ -251,25 +297,32 @@ export default function App() {
       return;
     }
     setIsProcessingPayment(true);
+    const API_URL = import.meta.env.VITE_API_URL || 'https://training-grounds-production.up.railway.app';
     try {
-      const response = await fetch('/api/create-checkout-session', {
+      const response = await fetch(`${API_URL}/api/create-checkout-session`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
+          planId: plan.id, // Prefer planId from new docs
           planName: plan.name,
           price: plan.price,
           duration: plan.duration
         }),
       });
 
-      const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          throw new Error(data.error || 'Failed to create checkout session');
+        }
       } else {
-        throw new Error(data.error || 'Failed to create checkout session');
+        throw new Error('Invalid response from server');
       }
     } catch (error) {
       console.error('Checkout error:', error);
@@ -750,26 +803,26 @@ export default function App() {
                             Unlock professional workouts from our legendary school of boxing.
                           </p>
                           
-                          <div className="flex items-center gap-4">
-                            <button 
-                              onClick={() => setShowSubscription(true)}
-                              className={`px-6 py-3 font-bold rounded-xl shadow-xl transition-all active:scale-95 ${
-                                isDarkMode ? 'bg-amber-500 text-black shadow-amber-500/20' : 'bg-black text-white shadow-black/20'
-                              }`}
-                            >
-                              Upgrade Now
-                            </button>
-                            <div className="flex -space-x-2">
-                              {[1, 2, 3].map(i => (
-                                <div key={i} className="w-8 h-8 rounded-full border-2 border-bg bg-zinc-800 flex items-center justify-center overflow-hidden">
-                                  <img src={`https://picsum.photos/seed/${i + 10}/32/32`} alt="user" referrerPolicy="no-referrer" />
-                                </div>
-                              ))}
-                              <div className="w-8 h-8 rounded-full border-2 border-bg bg-amber-500 flex items-center justify-center text-[10px] font-black text-black">
-                                +2k
-                              </div>
-                            </div>
-                          </div>
+                  <div className="flex items-center gap-4">
+                    <button 
+                      onClick={() => setShowSubscription(true)}
+                      className={`px-6 py-3 font-bold rounded-xl shadow-xl transition-all active:scale-95 ${
+                        isDarkMode ? 'bg-amber-500 text-black shadow-amber-500/20' : 'bg-black text-white shadow-black/20'
+                      }`}
+                    >
+                      Upgrade Now
+                    </button>
+                    <div className="flex -space-x-2">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="w-8 h-8 rounded-full border-2 border-bg bg-zinc-800 flex items-center justify-center overflow-hidden">
+                          <img src={`https://picsum.photos/seed/${i + 10}/32/32`} alt="user" referrerPolicy="no-referrer" />
+                        </div>
+                      ))}
+                      <div className="w-8 h-8 rounded-full border-2 border-bg bg-amber-500 flex items-center justify-center text-[10px] font-black text-black whitespace-nowrap px-2">
+                        +{publicStats?.totalUsers || '2k'}
+                      </div>
+                    </div>
+                  </div>
                         </div>
                         
                         {/* Animated Shine */}
@@ -781,33 +834,44 @@ export default function App() {
                     <div>
                       <div className="flex items-center justify-between mb-4 px-1">
                         <h4 className="text-xs font-black uppercase tracking-[0.2em] opacity-40">Wu-Gong Basics</h4>
-                        <span className="text-[10px] font-bold text-warmup uppercase tracking-widest">2 Free Sessions</span>
+                        <span className="text-[10px] font-bold text-warmup uppercase tracking-widest">
+                          {publicStats?.totalWorkouts || 2} Sessions Available
+                        </span>
                       </div>
                       <div className="grid grid-cols-1 gap-4">
                         {[
                           { 
+                            id: 'preset-1',
                             name: 'Monkey Footwork', 
-                            rounds: 6, 
-                            time: '3:00', 
-                            desc: 'Agility & Balance focus',
+                            category: 'Speed',
+                            difficulty: 'Beginner',
+                            description: 'Agility & Balance focus',
                             color: 'from-blue-500/20 to-cyan-500/20',
-                            icon: <Zap size={20} className="text-blue-400" />
+                            icon: <Zap size={20} className="text-blue-400" />,
+                            sections: [{
+                              id: 's1', name: 'Drill', repeatCount: 6, restBetweenRounds: 30,
+                              exercises: [{ id: 'e1', name: 'Lateral Hops', type: 'time', setsOrRounds: 1, repsOrDuration: 180, restBetweenSets: 0, mediaUrl: 'https://picsum.photos/seed/footwork/400/225', alternatives: [] }]
+                            }]
                           },
                           { 
+                            id: 'preset-2',
                             name: 'Iron Guard Drill', 
-                            rounds: 8, 
-                            time: '2:00', 
-                            desc: 'Defensive endurance',
+                            category: 'Technique',
+                            difficulty: 'Intermediate',
+                            description: 'Defensive endurance',
                             color: 'from-emerald-500/20 to-teal-500/20',
-                            icon: <ShieldCheck size={20} className="text-emerald-400" />
+                            icon: <ShieldCheck size={20} className="text-emerald-400" />,
+                            sections: [{
+                              id: 's1', name: 'Guard', repeatCount: 8, restBetweenRounds: 60,
+                              exercises: [{ id: 'e1', name: 'High Guard Hold', type: 'time', setsOrRounds: 1, repsOrDuration: 120, restBetweenSets: 0, mediaUrl: 'https://picsum.photos/seed/guard/400/225', alternatives: [] }]
+                            }]
                           },
                         ].map((p, i) => (
                           <button 
                             key={i}
                             onClick={() => {
-                              setSelectedWorkout(null);
-                              setConfig({ ...config, rounds: p.rounds, fightTime: parseInt(p.time) * 60 });
-                              setCurrentView('setup');
+                              setSelectedWorkout(p as any);
+                              setIsPlayingWorkout(true);
                             }}
                             className={`group relative overflow-hidden flex items-center p-5 border rounded-[28px] transition-all active:scale-[0.98] ${
                               isDarkMode 
@@ -825,15 +889,15 @@ export default function App() {
                               </div>
                               <div className="text-left flex-1">
                                 <div className="font-black text-lg italic tracking-tight">{p.name}</div>
-                                <div className="text-xs opacity-50 font-medium mb-1">{p.desc}</div>
+                                <div className="text-xs opacity-50 font-medium mb-1">{p.description}</div>
                                 <div className="flex items-center gap-3">
                                   <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-warmup">
                                     <RotateCcw size={10} />
-                                    {p.rounds} Rounds
+                                    {p.sections[0].repeatCount} Rds
                                   </div>
                                   <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest opacity-40">
                                     <Clock size={10} />
-                                    {p.time} min
+                                    {Math.round((p.sections[0].exercises[0].repsOrDuration * p.sections[0].repeatCount) / 60)}m
                                   </div>
                                 </div>
                               </div>
@@ -959,10 +1023,14 @@ export default function App() {
                               <div>
                                 <h3 className="font-bold text-lg leading-tight italic font-display">{w.name}</h3>
                                 <div className="flex items-center gap-1 mt-1">
-                                  <Star size={12} className="text-amber-500 fill-amber-500" />
-                                  <span className="text-xs font-bold opacity-60">{w.rating}</span>
+                                  <Layout size={12} className="text-amber-500" />
+                                  <span className="text-xs font-bold opacity-60">
+                                    {w.sections?.length || 0} Sections
+                                  </span>
                                   <span className="mx-1 opacity-20">•</span>
-                                  <span className="text-xs opacity-40 uppercase tracking-widest font-bold">{w.rounds} Rounds</span>
+                                  <span className="text-xs opacity-40 uppercase tracking-widest font-bold">
+                                    {(w.sections || []).reduce((acc: number, s: any) => acc + s.exercises.length, 0)} Bricks
+                                  </span>
                                 </div>
                               </div>
                             </div>
@@ -980,7 +1048,7 @@ export default function App() {
                               </div>
                               <div className="flex items-center gap-1">
                                 <User size={14} className="text-blue-400" />
-                                <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">{w.completions.toLocaleString()}</span>
+                                <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">{(w.completions || 0).toLocaleString()}</span>
                               </div>
                             </div>
                             <button className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-transform ${
@@ -1236,21 +1304,18 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 mb-8">
+              <div className="grid grid-cols-2 gap-4 mb-8">
                 <div className={`${isDarkMode ? 'glass-card' : 'bg-white border border-slate-200'} rounded-2xl p-4 text-center`}>
-                  <RotateCcw size={18} className="text-warmup mx-auto mb-1" />
-                  <div className="text-lg font-display font-bold">{selectedWorkout.rounds}</div>
-                  <div className="text-[8px] uppercase tracking-widest opacity-40">Rounds</div>
+                  <Layout size={18} className="text-warmup mx-auto mb-1" />
+                  <div className="text-lg font-display font-bold">{selectedWorkout.sections?.length || 0}</div>
+                  <div className="text-[8px] uppercase tracking-widest opacity-40">Sections</div>
                 </div>
                 <div className={`${isDarkMode ? 'glass-card' : 'bg-white border border-slate-200'} rounded-2xl p-4 text-center`}>
-                  <Clock size={18} className="text-amber-500 mx-auto mb-1" />
-                  <div className="text-lg font-display font-bold">{selectedWorkout.fightTime / 60}m</div>
-                  <div className="text-[8px] uppercase tracking-widest opacity-40">Fight</div>
-                </div>
-                <div className={`${isDarkMode ? 'glass-card' : 'bg-white border border-slate-200'} rounded-2xl p-4 text-center`}>
-                  <History size={18} className="text-emerald-400 mx-auto mb-1" />
-                  <div className="text-lg font-display font-bold">{selectedWorkout.restTime}s</div>
-                  <div className="text-[8px] uppercase tracking-widest opacity-40">Rest</div>
+                  <Dumbbell size={18} className="text-amber-500 mx-auto mb-1" />
+                  <div className="text-lg font-display font-bold">
+                    {(selectedWorkout.sections || []).reduce((acc: number, s: any) => acc + s.exercises.length, 0)}
+                  </div>
+                  <div className="text-[8px] uppercase tracking-widest opacity-40">Exercises</div>
                 </div>
               </div>
 
@@ -1262,19 +1327,41 @@ export default function App() {
               </div>
 
               <div className="mb-8">
-                <h3 className="text-xs font-black uppercase tracking-[0.2em] opacity-40 mb-4">Round Instructions</h3>
-                <div className="space-y-3">
-                  {selectedWorkout.instructions.map((inst, i) => (
-                    <div 
-                      key={i}
-                      className={`flex items-start gap-4 p-4 rounded-2xl border ${
-                        isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'
-                      }`}
-                    >
-                      <div className="w-8 h-8 rounded-full bg-warmup/10 text-warmup flex items-center justify-center text-xs font-black shrink-0">
-                        {inst.round}
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] opacity-40 mb-4">Hierarchy Flow</h3>
+                <div className="space-y-6">
+                  {(selectedWorkout.sections || []).map((s, si) => (
+                    <div key={s.id || si} className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        <span className="text-[10px] font-black uppercase tracking-widest opacity-50">{s.name} • Repeat {s.repeatCount}x</span>
                       </div>
-                      <p className="text-sm font-medium opacity-80 pt-1">{inst.instruction}</p>
+                      <div className="space-y-2">
+                        {s.exercises.map((e, ei) => (
+                          <div 
+                            key={e.id || ei}
+                            className={`flex items-start gap-4 p-4 rounded-2xl border ${
+                              isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'
+                            }`}
+                          >
+                            <div className="w-8 h-8 rounded-xl bg-warmup/10 text-warmup flex items-center justify-center text-[10px] font-black shrink-0 italic">
+                              {ei + 1}
+                            </div>
+                            <div className="flex-1 space-y-1">
+                              <p className="text-sm font-black uppercase italic opacity-90">{e.name}</p>
+                              <div className="flex items-center gap-3">
+                                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
+                                  {e.type === 'time' ? `${e.repsOrDuration}s` : `${e.repsOrDuration} Reps`}
+                                </p>
+                                {e.setsOrRounds > 1 && (
+                                  <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">
+                                    {e.setsOrRounds} Sets
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1285,12 +1372,7 @@ export default function App() {
                   if (selectedWorkout.sections && selectedWorkout.sections.length > 0) {
                     setIsPlayingWorkout(true);
                   } else {
-                    setConfig({
-                      rounds: selectedWorkout.rounds,
-                      fightTime: selectedWorkout.fightTime,
-                      restTime: selectedWorkout.restTime,
-                      warmupTime: 10
-                    });
+                    // Fallback for custom settings if sections missing
                     startTraining();
                   }
                 }}
@@ -1594,10 +1676,8 @@ export default function App() {
                       exit={{ opacity: 0, x: -20 }}
                       className={`p-4 rounded-2xl ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}`}
                     >
-                      <p className="text-sm font-medium leading-relaxed italic">
-                        "{timerState === 'REST' 
-                          ? selectedWorkout.instructions.find(i => i.round === currentRound + 1)?.instruction || 'Get ready for the next round!'
-                          : selectedWorkout.instructions.find(i => i.round === currentRound)?.instruction || 'Keep pushing!'}"
+                      <p className="text-sm font-medium leading-relaxed italic text-center">
+                        "{selectedWorkout.description || 'Push your limits and master the craft.'}"
                       </p>
                     </motion.div>
                   </AnimatePresence>
@@ -1690,9 +1770,7 @@ export default function App() {
                 
                 <div className={`p-6 rounded-3xl mb-8 ${isDarkMode ? 'bg-white/5 border border-white/5' : 'bg-slate-50 border-slate-100'}`}>
                   <p className="text-lg font-medium leading-relaxed italic text-center">
-                    "{timerState === 'REST' 
-                      ? selectedWorkout.instructions.find(i => i.round === currentRound + 1)?.instruction || 'Get ready for the next round!'
-                      : selectedWorkout.instructions.find(i => i.round === currentRound)?.instruction || 'Keep pushing!'}"
+                    "{selectedWorkout.name}: {selectedWorkout.description}"
                   </p>
                 </div>
 
@@ -1703,22 +1781,19 @@ export default function App() {
                   </div>
 
                   <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-3">Full Plan</h4>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-3">Sections</h4>
                     <div className="space-y-2">
-                      {selectedWorkout.instructions.map((inst, idx) => (
+                      {selectedWorkout.sections?.map((section, idx) => (
                         <div 
                           key={idx}
                           className={`flex items-center gap-3 p-3 rounded-xl border ${
-                            inst.round === (timerState === 'REST' ? currentRound + 1 : currentRound)
+                            idx + 1 === (timerState === 'REST' ? currentRound + 1 : currentRound)
                               ? 'bg-warmup/10 border-warmup/30'
                               : 'bg-white/5 border-transparent opacity-40'
                           }`}
                         >
-                          <span className="text-[10px] font-black w-4">{inst.round}</span>
-                          <span className="text-xs font-medium truncate">{inst.instruction}</span>
-                          {inst.round === (timerState === 'REST' ? currentRound + 1 : currentRound) && (
-                            <div className="ml-auto w-1.5 h-1.5 rounded-full bg-warmup animate-pulse" />
-                          )}
+                          <span className="text-[10px] font-black w-4">{idx + 1}</span>
+                          <span className="text-xs font-medium truncate">{section.name} (Repeat {section.repeatCount}x)</span>
                         </div>
                       ))}
                     </div>

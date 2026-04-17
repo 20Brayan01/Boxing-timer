@@ -36,18 +36,19 @@ export interface Workout {
   id: string;
   name: string;
   description: string;
-  rounds: number;
-  fightTime: number;
-  restTime: number;
   category: string;
   difficulty: string;
   completions: number;
   rating: number;
   isPremium: boolean;
   gifUrl: string;
-  instructions: RoundInstruction[];
   sections: WorkoutSection[];
   totalDuration?: number;
+}
+
+export interface PublicStats {
+  totalUsers: number;
+  totalWorkouts: number;
 }
 
 export interface Plan {
