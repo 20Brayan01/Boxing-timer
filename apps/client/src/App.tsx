@@ -827,7 +827,7 @@ export default function App() {
             <header className="p-6 flex justify-between items-center z-10">
               <div className="flex flex-col">
                 <span className="text-[10px] font-mono uppercase tracking-[0.2em] opacity-50">Boxing Timer</span>
-                <h1 className="font-display text-xl font-extrabold italic tracking-tight">SparTime</h1>
+                <h1 className="font-display text-xl font-extrabold italic tracking-tight">Training Ground</h1>
               </div>
               <div className="flex items-center gap-2">
                 {!isPremium && (
@@ -1470,16 +1470,85 @@ export default function App() {
                             </button>
                           </div>
 
+                          <div className="flex flex-col gap-6 pt-4">
+                            <div className="flex items-center gap-3 mb-2 px-2">
+                              <Sliders size={20} className="text-warmup" />
+                              <h3 className="text-xl font-display font-black italic tracking-tight uppercase">Training Gear</h3>
+                            </div>
+                            
+                            <div className={`p-8 rounded-[40px] border ${isDarkMode ? 'glass-card border-white/5' : 'bg-slate-50 border-slate-200'}`}>
+                              <div className="space-y-10">
+                                {/* Alerts */}
+                                <div className="space-y-4">
+                                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 italic text-center">Tuning & Alerts</h4>
+                                  <div className="space-y-4">
+                                    {[
+                                      { label: "Warning", value: config.warningTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, warningTime: Math.max(0, v) })) },
+                                      { label: "Intervals", value: config.intervalTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, intervalTime: Math.max(0, v) })) },
+                                    ].map(item => (
+                                      <ConfigStepper 
+                                        key={item.label}
+                                        label={item.label} 
+                                        value={item.value} 
+                                        isTime={item.isTime}
+                                        onChange={item.onChange}
+                                        isDarkMode={isDarkMode}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Sound Settings */}
+                                <div className="space-y-6">
+                                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 italic text-center">Audio Cues</h4>
+                                  <div className="space-y-6">
+                                    {[
+                                      { label: 'Start Round', key: 'startSound' },
+                                      { label: 'Interval Alert', key: 'intervalSound' },
+                                      { label: 'Warning Tap', key: 'warningSound' },
+                                      { label: 'Final Horn', key: 'finishSound' },
+                                    ].map((s) => (
+                                      <div key={s.key} className="space-y-3">
+                                        <div className="flex items-center justify-between px-2">
+                                          <span className="text-xs font-bold opacity-60">{s.label}</span>
+                                          <span className="text-[10px] font-mono text-warmup">{config[s.key as keyof Config]}</span>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2">
+                                          {['bell', 'horn', 'tap', 'beep', 'double_tap'].map((sound) => (
+                                            <button
+                                              key={sound}
+                                              onClick={() => {
+                                                setConfig(prev => ({ ...prev, [s.key]: sound }));
+                                                playAudio(sound as SoundType);
+                                              }}
+                                              className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-tight transition-all ${
+                                                config[s.key as keyof Config] === sound
+                                                  ? 'bg-warmup text-white shadow-lg shadow-warmup/30'
+                                                  : isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-slate-200 hover:bg-slate-300'
+                                              }`}
+                                            >
+                                              {sound.replace('_', ' ')}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
                           <button 
                             onClick={handleLogout}
-                            className={`w-full flex items-center justify-between p-5 rounded-2xl transition-all active:scale-[0.98] ${
+                            className={`w-full flex items-center justify-between p-5 rounded-2xl transition-all active:scale-[0.98] mt-4 mb-32 ${
                               isDarkMode 
                                 ? 'bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20' 
                                 : 'bg-red-50 text-red-500 border border-red-100 hover:bg-red-100'
                             }`}
                           >
                             <span className="flex items-center gap-3 font-bold text-sm">
-                              <RotateCcw size={18} /> Sign Out
+                              <RotateCcw size={18} /> Sign Out of Training Ground
                             </span>
                             <ChevronRight size={18} className="opacity-40" />
                           </button>
@@ -1635,56 +1704,54 @@ export default function App() {
                 >
                   <ChevronLeft size={20} />
                 </button>
-                <h2 className="text-2xl font-display font-black italic tracking-tight">Session Setup</h2>
+                <h2 className="text-2xl font-display font-black italic tracking-tight uppercase">Quick Setup</h2>
               </div>
-              <button 
-                onClick={() => setShowAdvancedSettings(true)}
-                className={`p-3 rounded-2xl transition-all active:scale-90 ${
-                  isDarkMode 
-                    ? 'glass-card glass-card-hover' 
-                    : 'bg-white border border-slate-200 shadow-sm hover:bg-slate-50'
-                }`}
-              >
-                <Settings2 size={20} className="text-warmup" />
-              </button>
             </header>
 
             <div className="flex-1 overflow-y-auto p-6 pb-32 custom-scrollbar">
               {/* Core Settings - Minimal & Fast */}
               <div className="space-y-6 pt-4">
-                <div className="bg-warmup/5 p-6 rounded-[32px] border border-warmup/10 mb-8">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-2xl bg-warmup/20 flex items-center justify-center text-warmup">
-                      <Zap size={20} />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-display font-black italic uppercase tracking-tight">Quick Start</h3>
-                      <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Set your core round stats</p>
-                    </div>
+                <div className={`p-8 rounded-[40px] border relative overflow-hidden ${
+                  isDarkMode ? 'glass-card border-white/5 bg-warmup/5' : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  <div className="absolute -right-12 -top-12 opacity-5 rotate-12">
+                    <Zap size={200} className="text-warmup" />
                   </div>
 
-                  <div className="space-y-5">
-                    {[
-                      { label: "Rounds", value: config.rounds, min: 1, onChange: (v: number) => setConfig(prev => ({ ...prev, rounds: Math.max(1, v) })) },
-                      { label: "Fight Time", value: config.fightTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, fightTime: Math.max(0, v) })) },
-                      { label: "Rest Time", value: config.restTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, restTime: Math.max(0, v) })) },
-                      { label: "Warmup", value: config.warmupTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, warmupTime: Math.max(0, v) })) },
-                    ].map((item, idx) => (
-                      <motion.div
-                        key={item.label}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.05 }}
-                      >
-                        <ConfigStepper 
-                          label={item.label} 
-                          value={item.value} 
-                          isTime={item.isTime}
-                          onChange={item.onChange}
-                          isDarkMode={isDarkMode}
-                        />
-                      </motion.div>
-                    ))}
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-3 mb-8">
+                      <div className="w-12 h-12 rounded-2xl bg-warmup/20 flex items-center justify-center text-warmup">
+                        <Play size={24} fill="currentColor" className="ml-1" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-display font-black italic uppercase tracking-tight">Ready to Work?</h3>
+                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Dial in your core stats</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      {[
+                        { label: "Rounds", value: config.rounds, min: 1, onChange: (v: number) => setConfig(prev => ({ ...prev, rounds: Math.max(1, v) })) },
+                        { label: "Fight Time", value: config.fightTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, fightTime: Math.max(0, v) })) },
+                        { label: "Rest Time", value: config.restTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, restTime: Math.max(0, v) })) },
+                        { label: "Warmup", value: config.warmupTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, warmupTime: Math.max(0, v) })) },
+                      ].map((item, idx) => (
+                        <motion.div
+                          key={item.label}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.1 }}
+                        >
+                          <ConfigStepper 
+                            label={item.label} 
+                            value={item.value} 
+                            isTime={item.isTime}
+                            onChange={item.onChange}
+                            isDarkMode={isDarkMode}
+                          />
+                        </motion.div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1695,19 +1762,19 @@ export default function App() {
                   startTraining();
                 }}
                 disabled={config.warmupTime === 0 && config.fightTime === 0 && config.restTime === 0}
-                className={`w-full py-6 font-display text-lg font-black italic uppercase tracking-wide rounded-3xl shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-4 mt-4 disabled:opacity-30 disabled:pointer-events-none ${
+                className={`w-full py-7 font-display text-xl font-black italic uppercase tracking-widest rounded-[32px] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-4 mt-8 disabled:opacity-30 disabled:pointer-events-none ${
                    isDarkMode ? 'bg-warmup text-white shadow-warmup/20' : 'bg-black text-white shadow-black/10'
                 }`}
               >
-                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                  <Play size={16} fill="white" className="ml-1" />
-                </div>
-                Jump In
+                Jump In the Cage
               </button>
 
-              <p className="text-center mt-8 text-[10px] font-black uppercase tracking-[0.3em] opacity-20">
-                Tap the icon above for custom sounds
-              </p>
+              <div className="flex flex-col items-center gap-2 mt-12 opacity-30">
+                <Dumbbell size={24} />
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-center">
+                  Tune Gear in Profile
+                </p>
+              </div>
             </div>
 
             {/* Advanced Settings Modal Overlay */}
