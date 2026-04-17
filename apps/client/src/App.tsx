@@ -445,8 +445,22 @@ export default function App() {
     osc.stop(ctx.currentTime + duration);
   }, [isMuted]);
 
+  // Reset timer on config change if not active
+  useEffect(() => {
+    if (!isActive && timerState === 'IDLE') {
+      setTimeLeft(config.warmupTime || config.fightTime || config.restTime);
+      if (config.warmupTime > 0) {
+        setTimerState('WARMUP');
+      } else if (config.fightTime > 0) {
+        setTimerState('FIGHT');
+      } else {
+        setTimerState('REST');
+      }
+    }
+  }, [config.warmupTime, config.fightTime, config.restTime, isActive, timerState, config]);
+
   const handleTimerEnd = useCallback(() => {
-    if (timerState === 'WARMUP') {
+    if (timerState === 'WARMUP' || timerState === 'IDLE') {
       playAudio(config.startSound);
       setTimerState('FIGHT');
       setTimeLeft(config.fightTime);
@@ -506,7 +520,11 @@ export default function App() {
   }, [isActive, timeLeft, handleTimerEnd, timerState, config, playAudio]);
 
   const toggleTimer = () => {
-    setIsActive(!isActive);
+    if (timerState === 'IDLE') {
+       startTraining();
+    } else {
+       setIsActive(!isActive);
+    }
   };
 
   const startTraining = () => {
@@ -515,7 +533,9 @@ export default function App() {
       return;
     }
 
-    playAudio(config.startSound);
+    if (!isActive) {
+      playAudio(config.startSound);
+    }
     
     setCurrentRound(1);
     setTotalSecondsElapsed(0);
