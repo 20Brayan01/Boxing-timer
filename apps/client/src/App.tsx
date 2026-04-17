@@ -1713,115 +1713,108 @@ export default function App() {
                 Jump In the Cage
               </button>
 
-              <div className="flex flex-col items-center gap-2 mt-12 opacity-30">
-                <Dumbbell size={24} />
-                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-center">
-                  Tune Gear in Profile
-                </p>
-              </div>
             </div>
-
-            {/* Advanced Settings Modal Overlay */}
-            <AnimatePresence>
-              {showAdvancedSettings && (
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-md p-6 flex items-end justify-center"
-                >
-                  <motion.div 
-                    initial={{ y: "100%" }}
-                    animate={{ y: 0 }}
-                    exit={{ y: "100%" }}
-                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className={`w-full max-w-lg rounded-[48px] p-8 max-h-[85vh] overflow-y-auto custom-scrollbar ${
-                      isDarkMode ? 'bg-zinc-900 border border-white/5' : 'bg-white shadow-2xl'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-8">
-                      <div className="flex items-center gap-3">
-                        <Sliders size={20} className="text-warmup" />
-                        <h3 className="text-2xl font-display font-black italic tracking-tight">Advanced Gear</h3>
-                      </div>
-                      <button 
-                        onClick={() => setShowAdvancedSettings(false)}
-                        className={`p-3 rounded-2xl ${isDarkMode ? 'bg-white/5' : 'bg-slate-100'}`}
-                      >
-                        <X size={20} />
-                      </button>
-                    </div>
-
-                    <div className="space-y-8">
-                      {/* Advanced Phases */}
-                      <div className="space-y-4">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 italic">Tuning & Alerts</h4>
-                        {[
-                          { label: "Warning", value: config.warningTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, warningTime: Math.max(0, v) })) },
-                          { label: "Intervals", value: config.intervalTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, intervalTime: Math.max(0, v) })) },
-                        ].map((item) => (
-                          <ConfigStepper 
-                            key={item.label}
-                            label={item.label} 
-                            value={item.value} 
-                            isTime={item.isTime}
-                            onChange={item.onChange}
-                            isDarkMode={isDarkMode}
-                          />
-                        ))}
-                      </div>
-
-                      {/* Sound Selector */}
-                      <div className="space-y-4">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 italic">Sound effects</h4>
-                        <div className="space-y-4">
-                          {[
-                            { label: "Round Start/End", key: 'startSound' },
-                            { label: "Interval Alert", key: 'intervalSound' },
-                            { label: "Warning Alert", key: 'warningSound' },
-                            { label: "Final Bell", key: 'finishSound' },
-                          ].map((s) => (
-                            <div key={s.key} className="space-y-2">
-                              <span className="text-[9px] font-bold uppercase opacity-60 tracking-wider flex items-center gap-2">
-                                <Volume2 size={10} /> {s.label}
-                              </span>
-                              <div className="flex gap-2 flex-wrap">
-                                {(['bell', 'horn', 'tap', 'beep', 'double_tap'] as SoundType[]).map(sound => (
-                                  <button
-                                    key={sound}
-                                    onClick={() => {
-                                      setConfig(prev => ({ ...prev, [s.key]: sound }));
-                                      playAudio(sound);
-                                    }}
-                                    className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-tight transition-all ${
-                                      config[s.key as keyof Config] === sound
-                                        ? 'bg-warmup text-white shadow-lg shadow-warmup/30'
-                                        : isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-slate-100 hover:bg-slate-200'
-                                    }`}
-                                  >
-                                    {sound.replace('_', ' ')}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => setShowAdvancedSettings(false)}
-                      className="w-full mt-10 py-5 bg-warmup text-white font-display text-lg font-black italic uppercase italic rounded-3xl active:scale-95 transition-all shadow-xl shadow-warmup/20"
-                    >
-                      Apply Gear
-                    </button>
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </motion.div>
         )}
 
+        {/* Global Overlays */}
+        <AnimatePresence>
+          {showAdvancedSettings && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-md p-6 flex items-end justify-center"
+            >
+              <motion.div 
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                className={`w-full max-w-lg rounded-[48px] p-8 max-h-[85vh] overflow-y-auto custom-scrollbar ${
+                  isDarkMode ? 'bg-zinc-900 border border-white/5' : 'bg-white shadow-2xl'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center gap-3">
+                    <Sliders size={20} className="text-warmup" />
+                    <h3 className="text-2xl font-display font-black italic tracking-tight">Advanced Gear</h3>
+                  </div>
+                  <button 
+                    onClick={() => setShowAdvancedSettings(false)}
+                    className={`p-3 rounded-2xl ${isDarkMode ? 'bg-white/5' : 'bg-slate-100'}`}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="space-y-8">
+                  {/* Advanced Phases */}
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 italic">Tuning & Alerts</h4>
+                    {[
+                      { label: "Warning", value: config.warningTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, warningTime: Math.max(0, v) })) },
+                      { label: "Intervals", value: config.intervalTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, intervalTime: Math.max(0, v) })) },
+                    ].map((item) => (
+                      <ConfigStepper 
+                        key={item.label}
+                        label={item.label} 
+                        value={item.value} 
+                        isTime={item.isTime}
+                        onChange={item.onChange}
+                        isDarkMode={isDarkMode}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Sound Selector */}
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 italic">Sound effects</h4>
+                    <div className="space-y-4">
+                      {[
+                        { label: "Round Start/End", key: 'startSound' },
+                        { label: "Interval Alert", key: 'intervalSound' },
+                        { label: "Warning Alert", key: 'warningSound' },
+                        { label: "Final Bell", key: 'finishSound' },
+                      ].map((s) => (
+                        <div key={s.key} className="space-y-2">
+                          <span className="text-[9px] font-bold uppercase opacity-60 tracking-wider flex items-center gap-2">
+                            <Volume2 size={10} /> {s.label}
+                          </span>
+                          <div className="flex gap-2 flex-wrap">
+                            {(['bell', 'horn', 'tap', 'beep', 'double_tap'] as SoundType[]).map(sound => (
+                              <button
+                                key={sound}
+                                onClick={() => {
+                                  setConfig(prev => ({ ...prev, [s.key]: sound }));
+                                  playAudio(sound);
+                                }}
+                                className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-tight transition-all ${
+                                  config[s.key as keyof Config] === sound
+                                    ? 'bg-warmup text-white shadow-lg shadow-warmup/30'
+                                    : isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-slate-100 hover:bg-slate-200'
+                                }`}
+                              >
+                                {sound.replace('_', ' ')}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setShowAdvancedSettings(false)}
+                  className="w-full mt-10 py-5 bg-warmup text-white font-display text-lg font-black italic uppercase rounded-3xl active:scale-95 transition-all shadow-xl shadow-warmup/20"
+                >
+                  Apply Gear
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </AnimatePresence>
 
       {/* Workout Tutorial Overlay */}
