@@ -10,8 +10,8 @@ import {
   Play, Pause, RotateCcw, Settings, Volume2, VolumeX, 
   ChevronUp, ChevronDown, X, Home, Dumbbell, User, 
   FastForward, Info, Award, History, Clock, Star, Plus, Minus,
-  ChevronLeft, ChevronRight, Share2, Zap, Coffee, ShieldCheck, TrendingUp, Moon, Sun,
-  Crown, CheckCircle2, Sparkles, LayoutDashboard, Layout
+  ChevronLeft, ChevronRight, Share2, Zap, Coffee, ShieldCheck, TrendingUp, Moon, Sun, Sliders,
+  Crown, CheckCircle2, Sparkles, LayoutDashboard, Layout, Settings2
 } from 'lucide-react';
 import { TimerState, Workout, User as SharedUser } from './shared-types';
 import WorkoutPlayer from './components/WorkoutPlayer';
@@ -67,6 +67,7 @@ export default function App() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
   const [showRating, setShowRating] = useState(false);
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [showWorkoutOverlay, setShowWorkoutOverlay] = useState(false);
   const [rating, setRating] = useState(0);
   
@@ -1477,126 +1478,69 @@ export default function App() {
             exit={{ opacity: 0, x: -100 }}
             className="flex-1 flex flex-col h-full overflow-hidden"
           >
-            <header className="p-6 flex items-center gap-4 z-10">
+            <header className="p-6 flex items-center justify-between z-10">
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={() => setCurrentView('tabs')}
+                  className={`p-3 rounded-2xl transition-all active:scale-90 ${
+                    isDarkMode 
+                      ? 'glass-card glass-card-hover' 
+                      : 'bg-white border border-slate-200 shadow-sm hover:bg-slate-50'
+                  }`}
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <h2 className="text-2xl font-display font-black italic tracking-tight">Session Setup</h2>
+              </div>
               <button 
-                onClick={() => setCurrentView('tabs')}
+                onClick={() => setShowAdvancedSettings(true)}
                 className={`p-3 rounded-2xl transition-all active:scale-90 ${
                   isDarkMode 
                     ? 'glass-card glass-card-hover' 
                     : 'bg-white border border-slate-200 shadow-sm hover:bg-slate-50'
                 }`}
               >
-                <ChevronLeft size={20} />
+                <Settings2 size={20} className="text-warmup" />
               </button>
-              <h2 className="text-2xl font-display font-black italic tracking-tight">Session Setup</h2>
             </header>
 
             <div className="flex-1 overflow-y-auto p-6 pb-32 custom-scrollbar">
-              {/* Top Space with Premium Card */}
-              <div className="min-h-[35vh] flex flex-col justify-end pb-8">
-                {!isPremium && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    onClick={() => setShowSubscription(true)}
-                    className={`border rounded-3xl p-6 relative overflow-hidden group cursor-pointer transition-all ${
-                      isDarkMode 
-                        ? 'glass-card border-amber-500/30' 
-                        : 'bg-white border-slate-200 shadow-sm'
-                    }`}
-                  >
-                    <div className="relative z-10">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Crown size={16} className="text-amber-500 fill-amber-500" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Monkey Squad Elite</span>
-                      </div>
-                      <h3 className="text-xl font-display font-black italic mb-1">Unlock Pro Workouts</h3>
-                      <p className={`text-sm mb-5 ${isDarkMode ? 'opacity-60' : 'text-slate-500'}`}>
-                        Access expert-designed routines from Wu-Gong boxing coaches.
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold opacity-40">Starting at $2.99</span>
-                        <div className="flex items-center gap-1 text-amber-500 font-bold text-sm">
-                          View Plans <ChevronRight size={16} />
-                        </div>
-                      </div>
+              {/* Core Settings - Minimal & Fast */}
+              <div className="space-y-6 pt-4">
+                <div className="bg-warmup/5 p-6 rounded-[32px] border border-warmup/10 mb-8">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-2xl bg-warmup/20 flex items-center justify-center text-warmup">
+                      <Zap size={20} />
                     </div>
-                    <Zap size={80} className={`absolute -right-4 -bottom-4 -rotate-12 group-hover:scale-110 transition-transform ${isDarkMode ? 'text-amber-500/10' : 'text-slate-100'}`} />
-                  </motion.div>
-                )}
-              </div>
+                    <div>
+                      <h3 className="text-lg font-display font-black italic uppercase tracking-tight">Quick Start</h3>
+                      <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Set your core round stats</p>
+                    </div>
+                  </div>
 
-              <div className="space-y-5 pb-10">
-                <div className="flex items-center gap-3 mb-4">
-                  <Clock size={18} className="text-warmup" />
-                  <h3 className="text-sm font-black uppercase tracking-widest italic opacity-50">Timer Phases</h3>
-                </div>
-                {[
-                  { label: "Rounds", value: config.rounds, min: 1, onChange: (v: number) => setConfig(prev => ({ ...prev, rounds: Math.max(1, v) })) },
-                  { label: "Warmup", value: config.warmupTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, warmupTime: Math.max(0, v) })) },
-                  { label: "Fight Time", value: config.fightTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, fightTime: Math.max(0, v) })) },
-                  { label: "Rest Time", value: config.restTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, restTime: Math.max(0, v) })) },
-                  { label: "Warning", value: config.warningTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, warningTime: Math.max(0, v) })) },
-                  { label: "Intervals", value: config.intervalTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, intervalTime: Math.max(0, v) })) },
-                ].map((item, idx) => (
-                  <motion.div
-                    key={item.label}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.05 }}
-                  >
-                    <ConfigStepper 
-                      label={item.label} 
-                      value={item.value} 
-                      isTime={item.isTime}
-                      onChange={item.onChange}
-                      isDarkMode={isDarkMode}
-                    />
-                  </motion.div>
-                ))}
-
-                <div className="pt-4 flex items-center gap-3 mb-2">
-                  <Volume2 size={18} className="text-fight" />
-                  <h3 className="text-sm font-black uppercase tracking-widest italic opacity-50">Custom Sounds</h3>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3">
-                  {[
-                    { label: "Round Start/End", key: 'startSound' },
-                    { label: "Interval Alert", key: 'intervalSound' },
-                    { label: "Warning Alert", key: 'warningSound' },
-                    { label: "Final Bell", key: 'finishSound' },
-                  ].map((s, idx) => (
-                    <motion.div 
-                      key={s.key}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.3 + (idx * 0.05) }}
-                      className={`p-4 rounded-2xl border flex flex-col gap-3 ${
-                        isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'
-                      }`}
-                    >
-                      <span className="text-[10px] font-black uppercase tracking-widest opacity-40 italic">{s.label}</span>
-                      <div className="flex gap-2 flex-wrap">
-                        {(['bell', 'horn', 'tap', 'beep', 'double_tap'] as SoundType[]).map(sound => (
-                          <button
-                            key={sound}
-                            onClick={() => {
-                              setConfig(prev => ({ ...prev, [s.key]: sound }));
-                              playAudio(sound);
-                            }}
-                            className={`px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase transition-all ${
-                              config[s.key as keyof Config] === sound
-                                ? 'bg-warmup text-white shadow-lg shadow-warmup/20 animate-pulse-gentle'
-                                : isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-white hover:bg-slate-200'
-                            }`}
-                          >
-                            {sound.replace('_', ' ')}
-                          </button>
-                        ))}
-                      </div>
-                    </motion.div>
-                  ))}
+                  <div className="space-y-5">
+                    {[
+                      { label: "Rounds", value: config.rounds, min: 1, onChange: (v: number) => setConfig(prev => ({ ...prev, rounds: Math.max(1, v) })) },
+                      { label: "Fight Time", value: config.fightTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, fightTime: Math.max(0, v) })) },
+                      { label: "Rest Time", value: config.restTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, restTime: Math.max(0, v) })) },
+                      { label: "Warmup", value: config.warmupTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, warmupTime: Math.max(0, v) })) },
+                    ].map((item, idx) => (
+                      <motion.div
+                        key={item.label}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.05 }}
+                      >
+                        <ConfigStepper 
+                          label={item.label} 
+                          value={item.value} 
+                          isTime={item.isTime}
+                          onChange={item.onChange}
+                          isDarkMode={isDarkMode}
+                        />
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -1606,12 +1550,119 @@ export default function App() {
                   startTraining();
                 }}
                 disabled={config.warmupTime === 0 && config.fightTime === 0 && config.restTime === 0}
-                className={`w-full py-5 font-bold rounded-2xl shadow-xl active:scale-95 transition-transform flex items-center justify-center gap-3 mt-4 disabled:opacity-30 disabled:pointer-events-none ${isDarkMode ? 'bg-white text-black shadow-white/5' : 'bg-black text-white shadow-black/10'}`}
+                className={`w-full py-6 font-display text-lg font-black italic uppercase tracking-wide rounded-3xl shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-4 mt-4 disabled:opacity-30 disabled:pointer-events-none ${
+                   isDarkMode ? 'bg-warmup text-white shadow-warmup/20' : 'bg-black text-white shadow-black/10'
+                }`}
               >
-                <Play size={20} fill="currentColor" />
-                Start Training
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                  <Play size={16} fill="white" className="ml-1" />
+                </div>
+                Jump In
               </button>
+
+              <p className="text-center mt-8 text-[10px] font-black uppercase tracking-[0.3em] opacity-20">
+                Tap the icon above for custom sounds
+              </p>
             </div>
+
+            {/* Advanced Settings Modal Overlay */}
+            <AnimatePresence>
+              {showAdvancedSettings && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-md p-6 flex items-end justify-center"
+                >
+                  <motion.div 
+                    initial={{ y: "100%" }}
+                    animate={{ y: 0 }}
+                    exit={{ y: "100%" }}
+                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                    className={`w-full max-w-lg rounded-[48px] p-8 max-h-[85vh] overflow-y-auto custom-scrollbar ${
+                      isDarkMode ? 'bg-zinc-900 border border-white/5' : 'bg-white shadow-2xl'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-8">
+                      <div className="flex items-center gap-3">
+                        <Sliders size={20} className="text-warmup" />
+                        <h3 className="text-2xl font-display font-black italic tracking-tight">Advanced Gear</h3>
+                      </div>
+                      <button 
+                        onClick={() => setShowAdvancedSettings(false)}
+                        className={`p-3 rounded-2xl ${isDarkMode ? 'bg-white/5' : 'bg-slate-100'}`}
+                      >
+                        <X size={20} />
+                      </button>
+                    </div>
+
+                    <div className="space-y-8">
+                      {/* Advanced Phases */}
+                      <div className="space-y-4">
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 italic">Tuning & Alerts</h4>
+                        {[
+                          { label: "Warning", value: config.warningTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, warningTime: Math.max(0, v) })) },
+                          { label: "Intervals", value: config.intervalTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, intervalTime: Math.max(0, v) })) },
+                        ].map((item) => (
+                          <ConfigStepper 
+                            key={item.label}
+                            label={item.label} 
+                            value={item.value} 
+                            isTime={item.isTime}
+                            onChange={item.onChange}
+                            isDarkMode={isDarkMode}
+                          />
+                        ))}
+                      </div>
+
+                      {/* Sound Selector */}
+                      <div className="space-y-4">
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 italic">Sound effects</h4>
+                        <div className="space-y-4">
+                          {[
+                            { label: "Round Start/End", key: 'startSound' },
+                            { label: "Interval Alert", key: 'intervalSound' },
+                            { label: "Warning Alert", key: 'warningSound' },
+                            { label: "Final Bell", key: 'finishSound' },
+                          ].map((s) => (
+                            <div key={s.key} className="space-y-2">
+                              <span className="text-[9px] font-bold uppercase opacity-60 tracking-wider flex items-center gap-2">
+                                <Volume2 size={10} /> {s.label}
+                              </span>
+                              <div className="flex gap-2 flex-wrap">
+                                {(['bell', 'horn', 'tap', 'beep', 'double_tap'] as SoundType[]).map(sound => (
+                                  <button
+                                    key={sound}
+                                    onClick={() => {
+                                      setConfig(prev => ({ ...prev, [s.key]: sound }));
+                                      playAudio(sound);
+                                    }}
+                                    className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-tight transition-all ${
+                                      config[s.key as keyof Config] === sound
+                                        ? 'bg-warmup text-white shadow-lg shadow-warmup/30'
+                                        : isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-slate-100 hover:bg-slate-200'
+                                    }`}
+                                  >
+                                    {sound.replace('_', ' ')}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setShowAdvancedSettings(false)}
+                      className="w-full mt-10 py-5 bg-warmup text-white font-display text-lg font-black italic uppercase italic rounded-3xl active:scale-95 transition-all shadow-xl shadow-warmup/20"
+                    >
+                      Apply Gear
+                    </button>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
 
@@ -1810,7 +1861,7 @@ export default function App() {
                       className={`p-4 rounded-2xl ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}`}
                     >
                       <p className="text-sm font-medium leading-relaxed italic text-center">
-                        "{selectedWorkout.description || 'Push your limits and master the craft.'}"
+                        "{selectedWorkout?.description || 'Push your limits and master the craft.'}"
                       </p>
                     </motion.div>
                   </AnimatePresence>
