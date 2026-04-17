@@ -16,8 +16,8 @@ import {
 import { TimerState, Workout, User as SharedUser } from './shared-types';
 import WorkoutPlayer from './components/WorkoutPlayer';
 
-type Tab = 'home' | 'workouts' | 'profile';
-type View = 'tabs' | 'setup' | 'timer' | 'workout-detail';
+type Tab = 'timer' | 'workouts' | 'profile';
+type View = 'tabs' | 'setup' | 'workout-detail';
 
 
 const WORKOUTS: Workout[] = [];
@@ -38,7 +38,7 @@ interface Config {
 }
 
 const DEFAULT_CONFIG: Config = {
-  rounds: 12,
+  rounds: 10,
   fightTime: 180, // 3 minutes
   restTime: 60,   // 1 minute
   warmupTime: 10, // 10 seconds
@@ -54,7 +54,7 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const [showSplash, setShowSplash] = useState(true);
-  const [activeTab, setActiveTab] = useState<Tab>('home');
+  const [activeTab, setActiveTab] = useState<Tab>('timer');
   const [currentView, setCurrentView] = useState<View>('tabs');
   const [isPremium, setIsPremium] = useState(false);
   const [showSubscription, setShowSubscription] = useState(false);
@@ -263,10 +263,26 @@ export default function App() {
           setAuthEmail('');
           setAuthPassword('');
         } else {
-          // New Signup Flow from Docs: { success: true, userId: "..." }
-          if (data.success) {
-            setAuthMode('login');
-            setAuthError('Account created! Please log in.');
+          // Auto-login after successful signup
+          if (data.success || data.token) {
+            const loginToken = data.token;
+            if (loginToken) {
+              localStorage.setItem('token', loginToken);
+              setToken(loginToken);
+              if (data.user) {
+                setUser(data.user);
+                const hasActiveSub = data.user.subscription_end_date && new Date(data.user.subscription_end_date) > new Date();
+                setIsPremium(!!hasActiveSub);
+              } else {
+                fetchUser();
+              }
+              setAuthEmail('');
+              setAuthPassword('');
+            } else {
+              // If backend only returns success but no token, we switch to login
+              setAuthMode('login');
+              setAuthError('Account created! Please log in.');
+            }
           } else {
             setAuthError(data.error || 'Signup failed');
           }
@@ -284,6 +300,11 @@ export default function App() {
     } finally {
       setIsAuthLoading(false);
     }
+  };
+
+  const handleGoogleLogin = async () => {
+    const API_URL = import.meta.env.VITE_API_URL || 'https://training-grounds-production.up.railway.app';
+    window.location.href = `${API_URL}/api/auth/google`;
   };
 
   const handleLogout = async () => {
@@ -498,7 +519,8 @@ export default function App() {
     
     setCurrentRound(1);
     setTotalSecondsElapsed(0);
-    setCurrentView('timer');
+    setCurrentView('tabs');
+    setActiveTab('timer');
 
     if (config.warmupTime > 0) {
       setTimerState('WARMUP');
@@ -649,7 +671,7 @@ export default function App() {
       <div 
         className="fixed inset-0 pointer-events-none opacity-20 blur-[100px] transition-colors duration-1000"
         style={{ 
-          background: `radial-gradient(circle at 50% 50%, ${currentView === 'timer' ? getThemeColor() : 'var(--color-warmup)'} 0%, transparent 70%)` 
+          background: `radial-gradient(circle at 50% 50%, ${(activeTab === 'timer' && currentView === 'tabs') ? getThemeColor() : 'var(--color-warmup)'} 0%, transparent 70%)` 
         }}
       />
 
@@ -822,177 +844,255 @@ export default function App() {
 
             <main className="flex-1 p-6 overflow-y-auto pb-32">
               <AnimatePresence mode="wait">
-                {activeTab === 'home' && (
+                {activeTab === 'timer' && (
                   <motion.div 
-                    key="home"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="space-y-8"
+                    key="timer"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex-1 flex flex-col h-full overflow-hidden -mt-6"
                   >
-                    {/* Welcome Card */}
-                    <div className={`relative overflow-hidden border rounded-[32px] p-8 transition-all duration-500 ${
-                      isDarkMode 
-                        ? 'glass-card border-white/10' 
-                        : 'bg-gradient-to-br from-amber-50 to-blue-50 border-slate-100 shadow-sm'
-                    }`}>
-                      <div className="relative z-10">
-                        <h2 className="text-3xl font-display font-black italic mb-2">Ready to Spar?</h2>
-                        <p className={`${isDarkMode ? 'text-white/50' : 'text-slate-600'} mb-6 max-w-[200px]`}>Set your rounds and push your limits today.</p>
-                        <button 
-                          onClick={() => {
-                            setSelectedWorkout(null);
-                            setCurrentView('setup');
-                          }}
-                          className={`px-8 py-4 font-bold rounded-2xl flex items-center gap-2 active:scale-95 transition-all shadow-lg ${
-                            isDarkMode ? 'bg-warmup text-white shadow-warmup/20' : 'bg-black text-white shadow-slate-900/10'
-                          }`}
-                        >
-                          <Play size={18} fill="currentColor" />
-                          Start Session
-                        </button>
-                      </div>
-                      <Dumbbell size={120} className={`absolute -right-8 -bottom-8 rotate-12 ${isDarkMode ? 'text-white/5' : 'text-blue-500/5'}`} />
-                    </div>
-
-                    {/* Premium CTA */}
-                    {!isPremium && (
-                      <motion.div 
-                        whileHover={{ scale: 1.02 }}
-                        onClick={() => setShowSubscription(true)}
-                        className={`cursor-pointer border rounded-[32px] p-8 relative overflow-hidden group shadow-2xl transition-all duration-500 ${
+                    {/* Timer Header */}
+                    <div className="w-full flex justify-between items-center py-4 z-10">
+                      <button 
+                        onClick={() => {
+                          if (isActive) {
+                            if (window.confirm('Stop training?')) resetTimer();
+                          } else {
+                            setActiveTab('workouts');
+                          }
+                        }}
+                        className={`p-3 rounded-2xl transition-all active:scale-90 ${
                           isDarkMode 
-                            ? 'bg-gradient-to-br from-amber-500/20 via-bg to-bg border-amber-500/30 shadow-amber-500/5' 
-                            : 'bg-gradient-to-br from-amber-100 via-white to-white border-amber-200 shadow-amber-900/5'
+                            ? 'glass-card glass-card-hover' 
+                            : 'bg-white border border-slate-200 shadow-sm hover:bg-slate-50'
                         }`}
                       >
-                        {/* Shining Yellow Strike Effect */}
-                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-400 to-transparent opacity-50 blur-sm" />
-                        
-                        <div className="absolute -right-4 -top-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                          <Crown size={140} className="text-amber-500 rotate-12" />
-                        </div>
-
-                        <div className="relative z-10">
-                          <div className="flex items-center gap-2 mb-4">
-                            <div className="p-2 bg-amber-500 rounded-xl shadow-lg shadow-amber-500/40">
-                              <Zap size={20} className="text-black fill-black" />
-                            </div>
-                            <span className="text-xs font-black uppercase tracking-[0.2em] text-amber-500">Monkey Squad Elite</span>
-                          </div>
-                          
-                          <h3 className="text-2xl font-display font-black italic mb-2 leading-tight">Master the Wu-Gong Boxing Style</h3>
-                          <p className={`text-sm mb-6 max-w-[240px] ${isDarkMode ? 'text-white/50' : 'text-slate-600'}`}>
-                            Unlock professional workouts from our legendary school of boxing.
-                          </p>
-                          
-                  <div className="flex items-center gap-4">
-                    <button 
-                      onClick={() => setShowSubscription(true)}
-                      className={`px-6 py-3 font-bold rounded-xl shadow-xl transition-all active:scale-95 ${
-                        isDarkMode ? 'bg-amber-500 text-black shadow-amber-500/20' : 'bg-black text-white shadow-black/20'
-                      }`}
-                    >
-                      Upgrade Now
-                    </button>
-                    <div className="flex -space-x-2">
-                      {[1, 2, 3].map(i => (
-                        <div key={i} className="w-8 h-8 rounded-full border-2 border-bg bg-zinc-800 flex items-center justify-center overflow-hidden">
-                          <img src={`https://picsum.photos/seed/${i + 10}/32/32`} alt="user" referrerPolicy="no-referrer" />
-                        </div>
-                      ))}
-                      <div className="w-8 h-8 rounded-full border-2 border-bg bg-amber-500 flex items-center justify-center text-[10px] font-black text-black whitespace-nowrap px-2">
-                        +{publicStats?.totalUsers || '2k'}
-                      </div>
-                    </div>
-                  </div>
-                        </div>
-                        
-                        {/* Animated Shine */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer pointer-events-none" />
-                      </motion.div>
-                    )}
-
-                    {/* Quick Start Presets */}
-                    <div>
-                      <div className="flex items-center justify-between mb-4 px-1">
-                        <h4 className="text-xs font-black uppercase tracking-[0.2em] opacity-40">Wu-Gong Basics</h4>
-                        <span className="text-[10px] font-bold text-warmup uppercase tracking-widest">
-                          {publicStats?.totalWorkouts || 2} Sessions Available
+                        {isActive ? <Home size={20} /> : <Dumbbell size={20} />}
+                      </button>
+                      
+                      <div className="flex flex-col items-center">
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-0.5">
+                          {selectedWorkout ? selectedWorkout.category : 'Free Training'}
                         </span>
+                        <h2 className="text-sm font-display font-black italic uppercase tracking-widest text-warmup text-center">
+                          {selectedWorkout ? selectedWorkout.name : 'Quick Session'}
+                        </h2>
                       </div>
-                      <div className="grid grid-cols-1 gap-4">
-                        {[
-                          { 
-                            id: 'preset-1',
-                            name: 'Monkey Footwork', 
-                            category: 'Speed',
-                            difficulty: 'Beginner',
-                            description: 'Agility & Balance focus',
-                            color: 'from-blue-500/20 to-cyan-500/20',
-                            icon: <Zap size={20} className="text-blue-400" />,
-                            sections: [{
-                              id: 's1', name: 'Drill', repeatCount: 6, restBetweenRounds: 30,
-                              exercises: [{ id: 'e1', name: 'Lateral Hops', type: 'time', setsOrRounds: 1, repsOrDuration: 180, restBetweenSets: 0, mediaUrl: 'https://picsum.photos/seed/footwork/400/225', alternatives: [] }]
-                            }]
-                          },
-                          { 
-                            id: 'preset-2',
-                            name: 'Iron Guard Drill', 
-                            category: 'Technique',
-                            difficulty: 'Intermediate',
-                            description: 'Defensive endurance',
-                            color: 'from-emerald-500/20 to-teal-500/20',
-                            icon: <ShieldCheck size={20} className="text-emerald-400" />,
-                            sections: [{
-                              id: 's1', name: 'Guard', repeatCount: 8, restBetweenRounds: 60,
-                              exercises: [{ id: 'e1', name: 'High Guard Hold', type: 'time', setsOrRounds: 1, repsOrDuration: 120, restBetweenSets: 0, mediaUrl: 'https://picsum.photos/seed/guard/400/225', alternatives: [] }]
-                            }]
-                          },
-                        ].map((p, i) => (
+
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => setIsMuted(!isMuted)}
+                          className={`p-3 rounded-2xl transition-all active:scale-90 ${
+                            isDarkMode 
+                              ? 'glass-card glass-card-hover' 
+                              : 'bg-white border border-slate-200 shadow-sm hover:bg-slate-50'
+                          }`}
+                        >
+                          {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                        </button>
+                        
+                        {!isActive && (
                           <button 
-                            key={i}
-                            onClick={() => {
-                              setSelectedWorkout(p as any);
-                              setIsPlayingWorkout(true);
-                            }}
-                            className={`group relative overflow-hidden flex items-center p-5 border rounded-[28px] transition-all active:scale-[0.98] ${
+                            onClick={() => setCurrentView('setup')}
+                            className={`p-3 rounded-2xl transition-all active:scale-90 ${
                               isDarkMode 
-                                ? 'glass-card border-white/5 hover:border-white/20' 
-                                : 'bg-white border-slate-200 hover:border-slate-400 shadow-sm'
+                                ? 'glass-card glass-card-hover bg-warmup/10 border-warmup/20 text-warmup' 
+                                : 'bg-warmup/10 text-warmup border border-warmup/20 shadow-sm hover:bg-warmup/20'
                             }`}
                           >
-                            <div className={`absolute inset-0 bg-gradient-to-br ${p.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+                            <Settings size={20} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex-1 flex flex-col items-center justify-center p-6 pt-2 overflow-y-auto custom-scrollbar">
+                      {/* Timer Display */}
+                      <div className="relative flex items-center justify-center z-10 mb-12">
+                        {/* Outer Ticks */}
+                        <div className="absolute w-80 h-80 flex items-center justify-center pointer-events-none">
+                          {Array.from({ length: 72 }).map((_, i) => (
+                            <div 
+                              key={i} 
+                              className={`tick ${i % 6 === 0 ? 'active h-4 w-0.5' : 'h-2 w-px'}`}
+                              style={{ 
+                                transform: `rotate(${i * 5}deg) translateY(-145px)`,
+                                color: getThemeColor(),
+                                opacity: (i * 5) < (getProgress() / 100) * 360 ? 0.6 : 0.1
+                              }} 
+                            />
+                          ))}
+                        </div>
+
+                        {/* Main Dial Surface */}
+                        <motion.div 
+                          className={`w-64 h-64 rounded-full flex items-center justify-center relative z-10 dial-surface ${!isDarkMode ? 'light' : ''}`}
+                          animate={{ 
+                            scale: isActive ? 1.02 : 1,
+                          }}
+                          transition={{ duration: 0.5, ease: "easeOut" }}
+                        >
+                          <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
+                            <motion.circle
+                              cx="128"
+                              cy="128"
+                              r="120"
+                              fill="transparent"
+                              stroke={getThemeColor()}
+                              strokeWidth="6"
+                              strokeLinecap="round"
+                              strokeDasharray={2 * Math.PI * 120}
+                              animate={{ 
+                                strokeDashoffset: (2 * Math.PI * 120) - (getProgress() / 100) * (2 * Math.PI * 120),
+                              }}
+                              transition={{ 
+                                duration: 1, 
+                                ease: "linear",
+                              }}
+                              style={{ 
+                                filter: `drop-shadow(0 0 8px ${getThemeColor()})`,
+                                opacity: timerState === 'IDLE' ? 0.1 : 1
+                              }}
+                            />
+                          </svg>
+
+                          {/* Inner Content */}
+                          <div className="flex flex-col items-center justify-center text-center z-20">
+                            <AnimatePresence mode="wait">
+                              <motion.span
+                                key={timerState + (timerState === 'FIGHT' && timeLeft <= 10 ? '-warn' : '')}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="font-display text-sm font-black uppercase tracking-[0.2em] mb-1"
+                                style={{ color: getThemeColor() }}
+                              >
+                                {timerState === 'FIGHT' && timeLeft <= 10 ? 'Finish Strong!' : (timerState === 'IDLE' ? 'Ready' : timerState)}
+                              </motion.span>
+                            </AnimatePresence>
                             
-                            <div className="relative z-10 flex items-center gap-5 w-full">
-                              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner ${
-                                isDarkMode ? 'bg-white/5' : 'bg-slate-100'
-                              }`}>
-                                {p.icon}
-                              </div>
-                              <div className="text-left flex-1">
-                                <div className="font-black text-lg italic tracking-tight">{p.name}</div>
-                                <div className="text-xs opacity-50 font-medium mb-1">{p.description}</div>
-                                <div className="flex items-center gap-3">
-                                  <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-warmup">
-                                    <RotateCcw size={10} />
-                                    {p.sections[0].repeatCount} Rds
-                                  </div>
-                                  <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest opacity-40">
-                                    <Clock size={10} />
-                                    {Math.round((p.sections[0].exercises[0].repsOrDuration * p.sections[0].repeatCount) / 60)}m
-                                  </div>
+                            <span className={`font-mono text-6xl font-black tracking-tighter tabular-nums ${!isDarkMode ? 'text-slate-900' : 'text-white'}`}>
+                              {formatTime(timeLeft)}
+                            </span>
+
+                            {/* Central Knob Detail */}
+                            <div className={`absolute w-12 h-12 rounded-full opacity-10 border-2 ${!isDarkMode ? 'border-black' : 'border-white'}`} />
+
+                            {/* Glowing Indicator Dot */}
+                            <motion.div 
+                              className="absolute w-4 h-4 rounded-full z-30 flex items-center justify-center"
+                              style={{ 
+                                backgroundColor: getThemeColor(),
+                                boxShadow: `0 0 20px ${getThemeColor()}, 0 0 40px ${getThemeColor()}44`,
+                                top: '50%',
+                                left: '50%',
+                                marginTop: '-8px',
+                                marginLeft: '-8px',
+                              }}
+                              animate={{ 
+                                rotate: (getProgress() / 100) * 360 - 90,
+                                translateX: 120
+                              }}
+                              transition={{ duration: 1, ease: "linear" }}
+                            >
+                              <div className="w-1.5 h-1.5 bg-white rounded-full opacity-80" />
+                            </motion.div>
+                          </div>
+                        </motion.div>
+                      </div>
+
+                      {/* Controls */}
+                      <div className="flex items-center gap-8 mb-12">
+                        <button 
+                          onClick={resetTimer}
+                          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                            isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-slate-100 hover:bg-slate-200'
+                          }`}
+                        >
+                          <RotateCcw size={20} />
+                        </button>
+
+                        <button 
+                          onClick={toggleTimer}
+                          className={`w-24 h-24 rounded-full flex items-center justify-center shadow-2xl transition-all active:scale-90 ${
+                            isDarkMode ? 'bg-white text-black shadow-white/10' : 'bg-black text-white shadow-black/20'
+                          }`}
+                        >
+                          {isActive ? <Pause size={32} fill="currentColor" /> : <Play size={32} fill="currentColor" className="ml-1" />}
+                        </button>
+
+                        <button 
+                          onClick={skipPhase}
+                          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                            isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-slate-100 hover:bg-slate-200'
+                          }`}
+                        >
+                          <FastForward size={20} />
+                        </button>
+                      </div>
+
+                      {/* Stats Grid */}
+                      <div className="w-full max-w-md grid grid-cols-2 gap-4 mb-8">
+                        <div className={`p-6 rounded-[32px] border flex flex-col items-center ${isDarkMode ? 'glass-card border-white/5' : 'bg-white border-slate-100 shadow-sm'}`}>
+                          <span className="text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Current Round</span>
+                          <div className="flex items-end gap-1">
+                            <span className="text-3xl font-display font-black italic">{currentRound}</span>
+                            <span className="text-xs font-bold opacity-30 mb-1">/ {config.rounds}</span>
+                          </div>
+                        </div>
+                        <div className={`p-6 rounded-[32px] border flex flex-col items-center ${isDarkMode ? 'glass-card border-white/5' : 'bg-white border-slate-100 shadow-sm'}`}>
+                          <span className="text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Total Time</span>
+                          <span className="text-3xl font-display font-black italic">{formatTime(totalSecondsElapsed)}</span>
+                        </div>
+                      </div>
+
+                      {/* Workout Focus Overlay Mini */}
+                      {selectedWorkout && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setShowWorkoutOverlay(true)}
+                          className="w-full max-w-md mb-8 z-10 cursor-pointer"
+                        >
+                          <div className={`p-5 rounded-[32px] border ${isDarkMode ? 'glass-card border-white/10' : 'bg-white border-slate-200 shadow-sm'}`}>
+                            <div className="flex items-center gap-4 mb-4">
+                              <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-white/10 relative">
+                                <img src={selectedWorkout.gifUrl} alt={selectedWorkout.name} className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                  <Plus size={16} className="text-white" />
                                 </div>
                               </div>
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                                isDarkMode ? 'bg-white/5 group-hover:bg-warmup' : 'bg-slate-100 group-hover:bg-black group-hover:text-white'
-                              }`}>
-                                <Play size={16} fill="currentColor" className="ml-1" />
+                              <div>
+                                <div className="text-[10px] font-black uppercase tracking-widest text-warmup mb-0.5">
+                                  {timerState === 'REST' ? 'Next Round Focus' : 'Current Focus'}
+                                </div>
+                                <h3 className="font-bold text-sm italic font-display opacity-80">Round {timerState === 'REST' ? currentRound + 1 : currentRound}</h3>
                               </div>
                             </div>
-                          </button>
-                        ))}
-                      </div>
+                            
+                            <AnimatePresence mode="wait">
+                              <motion.div
+                                key={currentRound + timerState}
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                className={`p-4 rounded-2xl ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}`}
+                              >
+                                <p className="text-sm font-medium leading-relaxed italic text-center">
+                                  "{selectedWorkout?.description || 'Push your limits and master the craft.'}"
+                                </p>
+                              </motion.div>
+                            </AnimatePresence>
+                            
+                            <div className="mt-3 flex justify-center">
+                              <span className="text-[8px] font-bold uppercase tracking-widest opacity-30">Tap to expand tutorial</span>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
                     </div>
                   </motion.div>
                 )}
@@ -1208,6 +1308,31 @@ export default function App() {
                           >
                             {isAuthLoading && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
                             {authMode === 'login' ? 'Login' : 'Sign Up'}
+                          </button>
+
+                          <div className="relative py-4">
+                            <div className="absolute inset-0 flex items-center">
+                              <div className="w-full border-t border-white/10"></div>
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                              <span className={`px-2 text-white/40 ${isDarkMode ? 'bg-zinc-900' : 'bg-white'}`}>Or continue with</span>
+                            </div>
+                          </div>
+
+                          <button 
+                            type="button"
+                            onClick={handleGoogleLogin}
+                            className={`w-full py-4 border rounded-2xl font-bold flex items-center justify-center gap-3 transition-all active:scale-95 ${
+                              isDarkMode ? 'border-white/10 hover:bg-white/5' : 'border-slate-200 hover:bg-slate-50'
+                            }`}
+                          >
+                            <svg className="w-5 h-5" viewBox="0 0 24 24">
+                              <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                              <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                              <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                              <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                            </svg>
+                            Google
                           </button>
                         </form>
 
@@ -1666,245 +1791,6 @@ export default function App() {
           </motion.div>
         )}
 
-        {currentView === 'timer' && (
-          <motion.div 
-            key="timer"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex-1 flex flex-col h-full overflow-hidden"
-          >
-            {/* Header */}
-            <div className="w-full flex justify-between items-center p-6 z-10">
-              <button 
-                onClick={() => {
-                  setIsActive(false);
-                  setCurrentView('setup');
-                }}
-                className={`p-3 rounded-2xl transition-all active:scale-90 ${
-                  isDarkMode 
-                    ? 'glass-card glass-card-hover' 
-                    : 'bg-white border border-slate-200 shadow-sm hover:bg-slate-50'
-                }`}
-              >
-                <ChevronLeft size={24} />
-              </button>
-              <div className="flex flex-col items-center">
-                <span className="text-[10px] font-mono uppercase tracking-[0.2em] opacity-50">
-                  {selectedWorkout ? selectedWorkout.name : 'Session Active'}
-                </span>
-                <h1 className="font-display text-xl font-extrabold italic tracking-tight">SparTime</h1>
-              </div>
-              <button 
-                onClick={() => setIsMuted(!isMuted)}
-                className={`p-3 rounded-2xl transition-all active:scale-90 ${
-                  isDarkMode 
-                    ? 'glass-card glass-card-hover' 
-                    : 'bg-white border border-slate-200 shadow-sm hover:bg-slate-50'
-                }`}
-              >
-                {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-              </button>
-            </div>
-
-            <div className="flex-1 flex flex-col items-center justify-center p-6 pt-2 overflow-y-auto custom-scrollbar">
-              {/* Timer Display */}
-              <div className="relative flex items-center justify-center z-10 mb-12">
-                {/* Outer Ticks */}
-                <div className="absolute w-80 h-80 flex items-center justify-center pointer-events-none">
-                  {Array.from({ length: 72 }).map((_, i) => (
-                    <div 
-                      key={i} 
-                      className={`tick ${i % 6 === 0 ? 'active h-4 w-0.5' : 'h-2 w-px'}`}
-                      style={{ 
-                        transform: `rotate(${i * 5}deg) translateY(-145px)`,
-                        color: getThemeColor(),
-                        opacity: (i * 5) < (getProgress() / 100) * 360 ? 0.6 : 0.1
-                      }} 
-                    />
-                  ))}
-                </div>
-
-                {/* Main Dial Surface */}
-                <motion.div 
-                  className={`w-64 h-64 rounded-full flex items-center justify-center relative z-10 dial-surface ${!isDarkMode ? 'light' : ''}`}
-                  animate={{ 
-                    scale: isActive ? 1.02 : 1,
-                  }}
-                  transition={{ duration: 0.5, ease: "easeOut" }}
-                >
-                  <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
-                    <motion.circle
-                      cx="128"
-                      cy="128"
-                      r="120"
-                      fill="transparent"
-                      stroke={getThemeColor()}
-                      strokeWidth="6"
-                      strokeLinecap="round"
-                      strokeDasharray={2 * Math.PI * 120}
-                      animate={{ 
-                        strokeDashoffset: (2 * Math.PI * 120) - (getProgress() / 100) * (2 * Math.PI * 120),
-                      }}
-                      transition={{ 
-                        duration: 1, 
-                        ease: "linear",
-                      }}
-                      style={{ 
-                        filter: `drop-shadow(0 0 8px ${getThemeColor()})`,
-                        opacity: timerState === 'IDLE' ? 0.1 : 1
-                      }}
-                    />
-                  </svg>
-
-                  {/* Inner Content */}
-                  <div className="flex flex-col items-center justify-center text-center z-20">
-                    <AnimatePresence mode="wait">
-                      <motion.span
-                        key={timerState + (timerState === 'FIGHT' && timeLeft <= 10 ? '-warn' : '')}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="font-display text-sm font-black uppercase tracking-[0.2em] mb-1"
-                        style={{ color: getThemeColor() }}
-                      >
-                        {timerState === 'FIGHT' && timeLeft <= 10 ? 'Finish Strong!' : (timerState === 'IDLE' ? 'Ready' : timerState)}
-                      </motion.span>
-                    </AnimatePresence>
-                    
-                    <span className={`font-mono text-6xl font-black tracking-tighter tabular-nums ${!isDarkMode ? 'text-slate-900' : 'text-white'}`}>
-                      {formatTime(timeLeft)}
-                    </span>
-
-                    {/* Central Knob Detail */}
-                    <div className={`absolute w-12 h-12 rounded-full opacity-10 border-2 ${!isDarkMode ? 'border-black' : 'border-white'}`} />
-
-                    {/* Glowing Indicator Dot */}
-                    <motion.div 
-                      className="absolute w-4 h-4 rounded-full z-30 flex items-center justify-center"
-                      style={{ 
-                        backgroundColor: getThemeColor(),
-                        boxShadow: `0 0 20px ${getThemeColor()}, 0 0 40px ${getThemeColor()}44`,
-                        top: '50%',
-                        left: '50%',
-                        marginTop: '-8px',
-                        marginLeft: '-8px',
-                      }}
-                      animate={{ 
-                        rotate: (getProgress() / 100) * 360 - 90,
-                        translateX: 120
-                      }}
-                      transition={{ duration: 1, ease: "linear" }}
-                    >
-                      <div className="w-1.5 h-1.5 bg-white rounded-full opacity-80" />
-                    </motion.div>
-                  </div>
-                </motion.div>
-
-                {/* Outer Glow */}
-                <motion.div 
-                  className="absolute w-72 h-72 rounded-full blur-3xl opacity-20 pointer-events-none"
-                  animate={{ 
-                    backgroundColor: getThemeColor(),
-                    scale: isActive ? [1, 1.1, 1] : 1
-                  }}
-                  transition={{ 
-                    duration: 2, 
-                    repeat: Infinity, 
-                    ease: "easeInOut" 
-                  }}
-                />
-              </div>
-
-            {/* Round Counter */}
-            <div className="z-10 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl px-8 py-4 mb-8 flex flex-col items-center">
-              <span className="text-[10px] uppercase tracking-widest opacity-50 mb-1">Round</span>
-              <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-display font-bold text-warmup">{currentRound}</span>
-                <span className="text-xl opacity-30">/</span>
-                <span className="text-xl opacity-30">{config.rounds}</span>
-              </div>
-            </div>
-
-            {/* Workout Info */}
-            {selectedWorkout && (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setShowWorkoutOverlay(true)}
-                className="w-full max-w-md mb-8 z-10 cursor-pointer"
-              >
-                <div className={`p-5 rounded-[32px] border ${isDarkMode ? 'glass-card border-white/10' : 'bg-white border-slate-200 shadow-sm'}`}>
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-white/10 relative">
-                      <img src={selectedWorkout.gifUrl} alt={selectedWorkout.name} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                        <Plus size={16} className="text-white" />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-black uppercase tracking-widest text-warmup mb-0.5">
-                        {timerState === 'REST' ? 'Next Round Focus' : 'Current Focus'}
-                      </div>
-                      <h3 className="font-bold text-sm italic font-display opacity-80">Round {timerState === 'REST' ? currentRound + 1 : currentRound}</h3>
-                    </div>
-                  </div>
-                  
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={currentRound + timerState}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      className={`p-4 rounded-2xl ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}`}
-                    >
-                      <p className="text-sm font-medium leading-relaxed italic text-center">
-                        "{selectedWorkout?.description || 'Push your limits and master the craft.'}"
-                      </p>
-                    </motion.div>
-                  </AnimatePresence>
-                  
-                  <div className="mt-3 flex justify-center">
-                    <span className="text-[8px] font-bold uppercase tracking-widest opacity-30">Tap to expand tutorial</span>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Controls */}
-            <div className="w-full max-w-md grid grid-cols-2 gap-4 z-10 mb-4">
-              <button
-                onClick={toggleTimer}
-                className={`flex items-center justify-center gap-3 py-5 rounded-2xl font-bold transition-all active:scale-95 ${
-                  isActive 
-                    ? 'bg-white/10 text-white border border-white/20' 
-                    : 'bg-warmup text-white shadow-lg shadow-warmup/20'
-                }`}
-              >
-                {isActive ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
-                {isActive ? 'Pause' : 'Resume'}
-              </button>
-              <button
-                onClick={skipPhase}
-                className="flex items-center justify-center gap-3 py-5 rounded-2xl bg-white/5 text-white/70 border border-white/10 font-bold transition-all active:scale-95 hover:bg-white/10"
-              >
-                <FastForward size={20} />
-                Skip
-              </button>
-            </div>
-
-            <button
-              onClick={resetTimer}
-              className="w-full max-w-md flex items-center justify-center gap-3 py-4 rounded-2xl bg-orange-500/10 text-orange-500 border border-orange-500/20 font-bold transition-all active:scale-95 hover:bg-orange-500/20"
-            >
-              <RotateCcw size={18} />
-              Reset Session
-            </button>
-          </div>
-        </motion.div>
-        )}
       </AnimatePresence>
 
       {/* Workout Tutorial Overlay */}
@@ -2224,7 +2110,7 @@ export default function App() {
                   : 'bg-white/90 backdrop-blur-2xl border-slate-200 shadow-slate-900/5'
               }`}
             >
-              <NavButton active={activeTab === 'home'} onClick={() => setActiveTab('home')} icon={<Home size={20} />} label="Home" isDarkMode={isDarkMode} />
+              <NavButton active={activeTab === 'timer'} onClick={() => setActiveTab('timer')} icon={<Clock size={20} />} label="Timer" isDarkMode={isDarkMode} />
               <NavButton active={activeTab === 'workouts'} onClick={() => setActiveTab('workouts')} icon={<Dumbbell size={20} />} label="Workouts" isDarkMode={isDarkMode} />
               <NavButton active={activeTab === 'profile'} onClick={() => {
                 setAuthSource('generic');
