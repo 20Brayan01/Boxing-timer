@@ -1673,20 +1673,20 @@ export default function App() {
             exit={{ opacity: 0, x: -100 }}
             className="flex-1 flex flex-col h-full overflow-hidden"
           >
-            <header className="p-6 flex flex-col gap-6 z-10">
+            <header className="p-4 flex flex-col gap-4 z-10">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   <button 
                     onClick={() => setCurrentView('tabs')}
-                    className={`p-3 rounded-2xl transition-all active:scale-90 ${
+                    className={`p-2.5 rounded-2xl transition-all active:scale-90 ${
                       isDarkMode 
                         ? 'glass-card glass-card-hover' 
                         : 'bg-white border border-slate-200 shadow-sm hover:bg-slate-50'
                     }`}
                   >
-                    <ChevronLeft size={20} />
+                    <ChevronLeft size={18} />
                   </button>
-                  <h2 className="text-2xl font-display font-black italic tracking-tight uppercase">Session Gear</h2>
+                  <h2 className="text-xl font-display font-black italic tracking-tight uppercase">Session Gear</h2>
                 </div>
               </div>
 
@@ -1694,7 +1694,7 @@ export default function App() {
               <div className={`p-1 rounded-2xl flex items-center gap-1 ${isDarkMode ? 'bg-white/5' : 'bg-slate-100'}`}>
                 <button
                   onClick={() => setSetupTab('quick')}
-                  className={`flex-1 py-3 rounded-[14px] text-[10px] font-black uppercase tracking-widest transition-all ${
+                  className={`flex-1 py-2 rounded-[14px] text-[10px] font-black uppercase tracking-widest transition-all ${
                     setupTab === 'quick'
                       ? (isDarkMode ? 'bg-warmup text-white shadow-lg shadow-warmup/20' : 'bg-white text-warmup shadow-sm')
                       : 'opacity-40 hover:opacity-60'
@@ -1704,7 +1704,7 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => setSetupTab('advanced')}
-                  className={`flex-1 py-3 rounded-[14px] text-[10px] font-black uppercase tracking-widest transition-all ${
+                  className={`flex-1 py-2 rounded-[14px] text-[10px] font-black uppercase tracking-widest transition-all ${
                     setupTab === 'advanced'
                       ? (isDarkMode ? 'bg-warmup text-white shadow-lg shadow-warmup/20' : 'bg-white text-warmup shadow-sm')
                       : 'opacity-40 hover:opacity-60'
@@ -1715,37 +1715,37 @@ export default function App() {
               </div>
             </header>
 
-            <div className="flex-1 overflow-y-auto p-6 pb-32 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 pb-32 custom-scrollbar">
               <AnimatePresence mode="wait">
                 {setupTab === 'quick' ? (
                   <motion.div
                     key="quick"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="space-y-6"
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    className="space-y-4"
                   >
                     {/* Core Settings - Minimal & Fast */}
-                    <div className="space-y-6 pt-4">
-                      <div className={`p-8 rounded-[40px] border relative overflow-hidden ${
+                    <div className="space-y-4">
+                      <div className={`p-6 rounded-[32px] border relative overflow-hidden ${
                         isDarkMode ? 'glass-card border-white/5 bg-warmup/5' : 'bg-white border-slate-200 shadow-sm'
                       }`}>
                         <div className="absolute -right-12 -top-12 opacity-5 rotate-12">
-                          <Zap size={200} className="text-warmup" />
+                          <Zap size={160} className="text-warmup" />
                         </div>
 
                         <div className="relative z-10">
-                          <div className="flex items-center gap-3 mb-8">
-                            <div className="w-12 h-12 rounded-2xl bg-warmup/20 flex items-center justify-center text-warmup">
-                              <Play size={24} fill="currentColor" className="ml-1" />
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 rounded-xl bg-warmup/20 flex items-center justify-center text-warmup">
+                              <Play size={20} fill="currentColor" className="ml-1" />
                             </div>
                             <div>
-                              <h3 className="text-xl font-display font-black italic uppercase tracking-tight">Ready to Work?</h3>
-                              <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Dial in your core stats</p>
+                              <h3 className="text-lg font-display font-black italic uppercase tracking-tight">Ready to Work?</h3>
+                              <p className="text-[9px] font-bold uppercase tracking-widest opacity-30">Dial in your core stats</p>
                             </div>
                           </div>
 
-                          <div className="space-y-6">
+                          <div className="space-y-4">
                             {[
                               { label: "Rounds", value: config.rounds, min: 1, onChange: (v: number) => setConfig(prev => ({ ...prev, rounds: Math.max(1, v) })) },
                               { label: "Fight Time", value: config.fightTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, fightTime: Math.max(0, v) })) },
@@ -1754,9 +1754,9 @@ export default function App() {
                             ].map((item, idx) => (
                               <motion.div
                                 key={item.label}
-                                initial={{ opacity: 0, x: -20 }}
+                                initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: idx * 0.1 }}
+                                transition={{ delay: idx * 0.05 }}
                               >
                                 <ConfigStepper 
                                   label={item.label} 
@@ -1771,49 +1771,22 @@ export default function App() {
                         </div>
                       </div>
                     </div>
-
-                    <button
-                      onClick={() => {
-                        if (timerState === 'IDLE') {
-                          setSelectedWorkout(null);
-                          startTraining();
-                        } else {
-                          setCurrentView('tabs');
-                        }
-                      }}
-                      disabled={timerState === 'IDLE' && config.warmupTime === 0 && config.fightTime === 0 && config.restTime === 0}
-                      className={`w-full py-7 font-display text-xl font-black italic uppercase tracking-widest rounded-[32px] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-4 mt-8 disabled:opacity-30 disabled:pointer-events-none ${
-                        isDarkMode ? 'bg-warmup text-white shadow-warmup/20' : 'bg-black text-white shadow-black/10'
-                      }`}
-                    >
-                      {timerState === 'IDLE' ? (
-                        <>
-                          <Play size={20} fill="currentColor" />
-                          Jump In the Cage
-                        </>
-                      ) : (
-                        <>
-                          <Clock size={20} />
-                          Resume Training
-                        </>
-                      )}
-                    </button>
                   </motion.div>
                 ) : (
                   <motion.div
                     key="advanced"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="space-y-8"
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    className="space-y-6"
                   >
-                    <div className={`p-10 rounded-[48px] border overflow-hidden ${
+                    <div className={`p-6 rounded-[32px] border overflow-hidden ${
                       isDarkMode ? 'glass-card border-white/5 bg-zinc-900/40' : 'bg-white border-slate-200 shadow-sm'
                     }`}>
-                      <div className="space-y-8">
+                      <div className="space-y-6">
                         {/* Advanced Phases */}
-                        <div className="space-y-4">
-                          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 italic">Tuning & Alerts</h4>
+                        <div className="space-y-3">
+                          <h4 className="text-[9px] font-black uppercase tracking-[0.2em] opacity-30 italic">Tuning & Alerts</h4>
                           {[
                             { label: "Warning", value: config.warningTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, warningTime: Math.max(0, v) })) },
                             { label: "Intervals", value: config.intervalTime, min: 0, isTime: true, onChange: (v: number) => setConfig(prev => ({ ...prev, intervalTime: Math.max(0, v) })) },
@@ -1830,18 +1803,18 @@ export default function App() {
                         </div>
 
                         {/* Sound Selector */}
-                        <div className="space-y-4">
-                          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 italic">Sound effects</h4>
-                          <div className="space-y-6">
+                        <div className="space-y-3">
+                          <h4 className="text-[9px] font-black uppercase tracking-[0.2em] opacity-30 italic">Sound effects</h4>
+                          <div className="space-y-5">
                             {[
                               { label: "Round Start/End", key: 'startSound' },
                               { label: "Interval Alert", key: 'intervalSound' },
                               { label: "Warning Alert", key: 'warningSound' },
                               { label: "Final Bell", key: 'finishSound' },
                             ].map((s) => (
-                              <div key={s.key} className="space-y-3">
-                                <span className="text-[9px] font-bold uppercase opacity-60 tracking-wider flex items-center gap-2">
-                                  <Volume2 size={10} /> {s.label}
+                              <div key={s.key} className="space-y-2">
+                                <span className="text-[8px] font-bold uppercase opacity-40 tracking-wider flex items-center gap-2">
+                                  <Volume2 size={8} /> {s.label}
                                 </span>
                                 <div className="flex gap-2 flex-wrap">
                                   {(['bell', 'horn', 'tap', 'beep', 'double_tap'] as SoundType[]).map(sound => (
@@ -1851,7 +1824,7 @@ export default function App() {
                                         setConfig(prev => ({ ...prev, [s.key]: sound }));
                                         playAudio(sound);
                                       }}
-                                      className={`px-3 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-tight transition-all ${
+                                      className={`px-3 py-2 rounded-xl text-[8px] font-black uppercase tracking-tight transition-all ${
                                         (config as any)[s.key] === sound
                                           ? 'bg-warmup text-white shadow-lg shadow-warmup/30'
                                           : isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-slate-100 hover:bg-slate-200'
@@ -1867,16 +1840,39 @@ export default function App() {
                         </div>
                       </div>
                     </div>
-
-                    <button
-                      onClick={() => setCurrentView('tabs')}
-                      className="w-full mt-4 py-6 bg-emerald-500 text-white font-display text-lg font-black italic uppercase rounded-3xl active:scale-95 transition-all shadow-xl shadow-emerald-500/20"
-                    >
-                      Save & Apply
-                    </button>
                   </motion.div>
                 )}
               </AnimatePresence>
+            </div>
+
+            {/* Unified Footer Button */}
+            <div className={`p-6 pt-0 mt-auto ${isDarkMode ? 'bg-bg' : 'bg-white'}`}>
+              <button
+                onClick={() => {
+                  if (timerState === 'IDLE') {
+                    setSelectedWorkout(null);
+                    startTraining();
+                  } else {
+                    setCurrentView('tabs');
+                  }
+                }}
+                disabled={timerState === 'IDLE' && config.warmupTime === 0 && config.fightTime === 0 && config.restTime === 0}
+                className={`w-full py-5 font-display text-lg font-black italic uppercase tracking-widest rounded-[28px] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-4 disabled:opacity-30 disabled:pointer-events-none ${
+                   isDarkMode ? 'bg-warmup text-white shadow-warmup/20' : 'bg-black text-white shadow-black/10'
+                }`}
+              >
+                {timerState === 'IDLE' ? (
+                  <>
+                    <Play size={18} fill="currentColor" />
+                    Jump In the Cage
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck size={18} />
+                    Save & Return
+                  </>
+                )}
+              </button>
             </div>
           </motion.div>
         )}
@@ -2292,52 +2288,49 @@ function ConfigStepper({ label, value, onChange, isDarkMode, isTime = false }: {
   return (
     <div className="flex flex-col gap-2">
       <span className={`text-[9px] font-bold uppercase tracking-widest px-2 ${isDarkMode ? 'text-white/40' : 'text-slate-500'}`}>{label}</span>
-      <div className={`flex flex-col gap-4 rounded-[32px] p-4 border transition-colors ${
+      <div className={`flex flex-col gap-1 rounded-[24px] p-2 border transition-colors ${
         isDarkMode 
-          ? 'glass-card border-white/5' 
+          ? 'glass-card border-white/5 bg-white/5' 
           : 'bg-white border-slate-200 shadow-sm'
       }`}>
-        <div className="flex items-center justify-center mb-2">
+        <div className="flex items-center justify-center p-1">
           <div className="flex flex-col items-center">
-            <span className={`text-3xl font-display font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+            <span className={`text-2xl font-display font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
               {formatValue(value)}
             </span>
-            {isTime && <span className="text-[8px] opacity-30 uppercase font-bold tracking-widest">Minutes : Seconds</span>}
+            {isTime && <span className="text-[7px] opacity-30 uppercase font-bold tracking-widest leading-none">Min : Sec</span>}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-2">
-            <span className="text-[7px] uppercase font-bold tracking-widest opacity-30 text-center">Decrease</span>
-            <div className="flex justify-center gap-2">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex flex-col gap-1">
+            <span className="text-[6px] uppercase font-bold tracking-widest opacity-20 text-center">Less</span>
+            <div className="flex justify-center gap-1">
               {increments.map(inc => (
                 <button 
                   key={`dec-${inc}`}
                   onClick={() => onChange(Math.max(inc === 1 ? (isTime ? 5 : 1) : 0, value - inc))}
-                  className={`flex-1 h-10 flex flex-col items-center justify-center rounded-xl transition-all active:scale-90 ${
+                  className={`flex-1 h-8 flex flex-col items-center justify-center rounded-lg transition-all active:scale-90 ${
                     isDarkMode ? 'bg-white/5 hover:bg-white/10 border border-white/5' : 'bg-slate-50 hover:bg-slate-100 text-slate-600'
                   }`}
                 >
-                  <Minus size={12} />
-                  <span className="text-[8px] font-bold">{inc}{isTime ? 's' : ''}</span>
+                  <span className="text-[10px] font-black">-{inc}</span>
                 </button>
               ))}
             </div>
           </div>
-
-          <div className="flex flex-col gap-2">
-            <span className="text-[7px] uppercase font-bold tracking-widest opacity-30 text-center">Increase</span>
-            <div className="flex justify-center gap-2">
+          <div className="flex flex-col gap-1">
+            <span className="text-[6px] uppercase font-bold tracking-widest opacity-20 text-center">More</span>
+            <div className="flex justify-center gap-1">
               {increments.map(inc => (
                 <button 
                   key={`inc-${inc}`}
                   onClick={() => onChange(value + inc)}
-                  className={`flex-1 h-10 flex flex-col items-center justify-center rounded-xl transition-all active:scale-90 ${
+                  className={`flex-1 h-8 flex flex-col items-center justify-center rounded-lg transition-all active:scale-90 ${
                     isDarkMode ? 'bg-white/5 hover:bg-white/10 border border-white/5' : 'bg-slate-50 hover:bg-slate-100 text-slate-600'
                   }`}
                 >
-                  <Plus size={12} />
-                  <span className="text-[8px] font-bold">{inc}{isTime ? 's' : ''}</span>
+                  <span className="text-[10px] font-black">+{inc}</span>
                 </button>
               ))}
             </div>
