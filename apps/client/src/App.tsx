@@ -255,89 +255,62 @@ export default function App() {
     setAuthError('');
     setIsAuthLoading(true);
     const API_URL = import.meta.env.VITE_API_URL || 'https://training-grounds-production.up.railway.app';
-    
-    // Internal function to perform login
-    const performLogin = async (emailToUse: string, passwordToUse: string) => {
-      try {
-        const loginRes = await fetch(`${API_URL}/api/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: emailToUse, password: passwordToUse })
-        });
-        
-        if (loginRes.ok) {
-          const loginData = await loginRes.json();
-          if (loginData.token) {
-            localStorage.setItem('token', loginData.token);
-            setToken(loginData.token);
-            setUser(loginData.user);
-            const hasActiveSub = loginData.user?.subscription_end_date && new Date(loginData.user.subscription_end_date) > new Date();
-            setIsPremium(!!hasActiveSub);
-            setAuthEmail('');
-            setAuthPassword('');
-            setAuthError('');
-            return true;
-          }
-        }
-      } catch (err) {
-        console.error('Auto-login error:', err);
-      }
-      return false;
-    };
+    const email = authEmail;
+    const password = authPassword;
 
-    const endpoint = authMode === 'login' ? `${API_URL}/api/auth/login` : `${API_URL}/api/auth/signup`;
     try {
+      const mode = authMode;
+      const endpoint = mode === 'login' ? `${API_URL}/api/auth/login` : `${API_URL}/api/auth/signup`;
+      
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: authEmail, password: authPassword })
+        body: JSON.stringify({ email: email, password: password })
       });
       
-      const contentType = res.headers.get("content-type");
-      const isSuccess = res.ok || res.status === 201;
+      const data = await res.json();
 
-      if (isSuccess && contentType && contentType.includes("application/json")) {
-        const data = await res.json();
-        
-        const loginToken = data.token;
-        if (loginToken) {
-          localStorage.setItem('token', loginToken);
-          setToken(loginToken);
-          
-          if (data.user) {
-            setUser(data.user);
-            const hasActiveSub = data.user.subscription_end_date && new Date(data.user.subscription_end_date) > new Date();
-            setIsPremium(!!hasActiveSub);
-          } else {
-            fetchUser(loginToken);
-          }
-          
+      if (res.ok) {
+        // If the server returns a token (common for login and modern signup)
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          setToken(data.token);
+          setUser(data.user);
           setAuthEmail('');
           setAuthPassword('');
-          setAuthError('');
-        } else if (authMode === 'signup') {
-          // Force auto-login for all successful signups that don't return a token
-          const loggedIn = await performLogin(authEmail, authPassword);
-          if (!loggedIn) {
-            // Last resort: Switch to login mode and show a more helpful message
-            setAuthMode('login');
-            setAuthError('Account created successfully! Please enter your details once more to jump in.');
+          return;
+        } 
+        
+        // If signup was successful but no token was returned, execute immediate login
+        if (mode === 'signup') {
+          const loginRes = await fetch(`${API_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, password: password })
+          });
+          
+          if (loginRes.ok) {
+            const loginData = await loginRes.json();
+            if (loginData.token) {
+              localStorage.setItem('token', loginData.token);
+              setToken(loginData.token);
+              setUser(loginData.user);
+              setAuthEmail('');
+              setAuthPassword('');
+              return;
+            }
           }
-        } else {
-          setAuthError(data.error || 'Authentication failed');
+           // Fail-over: if auto-login fails, let the user know and switch to login mode
+           setAuthMode('login');
+           setAuthError('Account created! Please enter your details one more time to log in.');
+           return;
         }
-      } else {
-        let errorMsg = 'Authentication failed';
-        if (contentType && contentType.includes("application/json")) {
-          const errorData = await res.json();
-          errorMsg = errorData.error || errorMsg;
-        } else if (res.status === 409) {
-          errorMsg = 'User already exists. Please login instead.';
-        }
-        setAuthError(errorMsg);
       }
+      
+      setAuthError(data.error || 'Authentication failed');
     } catch (err) {
-      setAuthError('Connection to authentication server failed');
+      console.error('Auth error:', err);
+      setAuthError('Connection to server failed. Please check your internet.');
     } finally {
       setIsAuthLoading(false);
     }
@@ -347,29 +320,30 @@ export default function App() {
     const API_URL = import.meta.env.VITE_API_URL || 'https://training-grounds-production.up.railway.app';
     setAuthError('');
     try {
-      // 1. Fetch the OAuth URL from your server
-      const res = await fetch(`${API_URL}/api/auth/google/url`);
+      // 1. Construct the redirect URI pointing specifically back to this App's URL
+      const redirectUri = window.location.origin;
+      
+      // 2. Fetch the OAuth authorization URL from your server, passing our redirect_uri
+      const res = await fetch(`${API_URL}/api/auth/google/url?redirect_uri=${encodeURIComponent(redirectUri)}`);
+      
       if (res.ok) {
         const data = await res.json();
         if (data.url) {
-          // 2. Open the OAuth PROVIDER's URL directly or use as redirect
-          // We use a top-level redirect as the primary method, but if it's the backend route, we should rethink
-          // If data.url contains accounts.google.com, it's safe to redirect or popup
-          if (data.url.includes('accounts.google.com')) {
-            window.location.href = data.url;
-          } else {
-            // If it's a backend redirect route, try it directly
-            window.location.href = data.url;
-          }
+          // 3. Redirect to the URL provided by the server
+          // If the server provides a Google URL, we go there. 
+          // If it provides a local route, it might show the "web version", 
+          // but we follow the server's instruction as it holds the configuration.
+          window.location.href = data.url;
           return;
         }
       }
       
-      // Fallback: If the URL endpoint fails, redirect to the main Google entry point
-      // Note: This matches the 'Redirect Flow' mentioned in the documentation
-      window.location.href = `${API_URL}/api/auth/google`;
+      // Fallback: If the metadata endpoint fails, try the direct Google endpoint on the server
+      // We pass the redirect_uri here as well to guide the backend away from its default UI
+      window.location.href = `${API_URL}/api/auth/google?redirect_uri=${encodeURIComponent(redirectUri)}`;
     } catch (err) {
       console.error('Google auth initialization error:', err);
+      // Last resort: try the direct path
       window.location.href = `${API_URL}/api/auth/google`;
     }
   };
