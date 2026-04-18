@@ -178,11 +178,14 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [token]);
 
-  const fetchUser = async () => {
+  const fetchUser = async (providedToken?: string) => {
     const API_URL = import.meta.env.VITE_API_URL || 'https://training-grounds-production.up.railway.app';
+    const tokenToUse = providedToken || token;
+    if (!tokenToUse) return;
+
     try {
       const res = await fetch(`${API_URL}/api/auth/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${tokenToUse}` }
       });
       if (res.ok) {
         const contentType = res.headers.get("content-type");
@@ -197,7 +200,7 @@ export default function App() {
         }
       } else {
         console.error('Fetch user failed with status:', res.status);
-        handleLogout();
+        if (!providedToken) handleLogout();
       }
     } catch (err) {
       console.error('Fetch user error:', err);
@@ -291,7 +294,9 @@ export default function App() {
       });
       
       const contentType = res.headers.get("content-type");
-      if (res.ok && contentType && contentType.includes("application/json")) {
+      const isSuccess = res.ok || res.status === 201;
+
+      if (isSuccess && contentType && contentType.includes("application/json")) {
         const data = await res.json();
         
         const loginToken = data.token;
@@ -304,18 +309,19 @@ export default function App() {
             const hasActiveSub = data.user.subscription_end_date && new Date(data.user.subscription_end_date) > new Date();
             setIsPremium(!!hasActiveSub);
           } else {
-            fetchUser();
+            fetchUser(loginToken);
           }
           
           setAuthEmail('');
           setAuthPassword('');
           setAuthError('');
-        } else if (authMode === 'signup' && (data.success || res.status === 201)) {
-          // Attempt automatic login after successful signup if no token was returned
+        } else if (authMode === 'signup') {
+          // Force auto-login for all successful signups that don't return a token
           const loggedIn = await performLogin(authEmail, authPassword);
           if (!loggedIn) {
+            // Last resort: Switch to login mode and show a more helpful message
             setAuthMode('login');
-            setAuthError('Account created! Please enter your credentials to login.');
+            setAuthError('Account created successfully! Please enter your details once more to jump in.');
           }
         } else {
           setAuthError(data.error || 'Authentication failed');
@@ -341,22 +347,29 @@ export default function App() {
     const API_URL = import.meta.env.VITE_API_URL || 'https://training-grounds-production.up.railway.app';
     setAuthError('');
     try {
-      // First try to get the redirect URL
+      // 1. Fetch the OAuth URL from your server
       const res = await fetch(`${API_URL}/api/auth/google/url`);
       if (res.ok) {
         const data = await res.json();
         if (data.url) {
-          window.location.href = data.url;
+          // 2. Open the OAuth PROVIDER's URL directly or use as redirect
+          // We use a top-level redirect as the primary method, but if it's the backend route, we should rethink
+          // If data.url contains accounts.google.com, it's safe to redirect or popup
+          if (data.url.includes('accounts.google.com')) {
+            window.location.href = data.url;
+          } else {
+            // If it's a backend redirect route, try it directly
+            window.location.href = data.url;
+          }
           return;
         }
       }
       
-      // Fallback: Try direct redirect if the URL endpoint fails or doesn't exist
-      // This is a common pattern where /api/auth/google itself handles the redirect
+      // Fallback: If the URL endpoint fails, redirect to the main Google entry point
+      // Note: This matches the 'Redirect Flow' mentioned in the documentation
       window.location.href = `${API_URL}/api/auth/google`;
     } catch (err) {
       console.error('Google auth initialization error:', err);
-      // Even if fetch fails, try the direct redirect as a last resort
       window.location.href = `${API_URL}/api/auth/google`;
     }
   };
